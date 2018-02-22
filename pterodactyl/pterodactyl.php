@@ -37,15 +37,23 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
     curl_setopt($curl, CURLOPT_USERAGENT, "Pterodactyl-WHMCS");
-    curl_setopt($curl, CURLOPT_HTTPHEADER, [
+
+    $headers = [
         "Authorization: Bearer " . $params['serverpassword'],
         "Accept: Application/vnd.pterodactyl.v1+json",
-    ]);
+    ];
 
-    if(isset($data)) curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+    if($method === 'POST') {
+        $jsonData = json_encode($data);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $jsonData);
+        array_push($headers, "Content-Type: application/json");
+        array_push($headers, "Content-Length: " . strlen($jsonData));
+    }
+
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
     $response = curl_exec($curl);
-    if(!$response) logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
+    if(!isset($response)) logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
 
     $responseData = json_decode($response, true);
     $responseData['status_code'] = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -53,7 +61,7 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     curl_close($curl);
 
     logModuleCall("Pterodactyl-WHMCS", $method . " - " . $url,
-        isset($data) ? print_r($data, true) : "",
+        isset($data) ? json_encode($data) : "",
         print_r($responseData, true));
 
     return $responseData;
@@ -74,34 +82,80 @@ function pterodactyl_MetaData() {
 function pterodactyl_ConfigOptions() {
     return [
         "cpu" => [
-            "FriendlyName" => "CPU Limit",
+            "FriendlyName" => "CPU Limit (%)",
+            "Description" => "Amount of CPU to assign to the created server.",
             "Type" => "text",
             "Size" => 10,
         ],
         "disk" => [
-            "FriendlyName" => "Disk Space",
+            "FriendlyName" => "Disk Space (MB)",
+            "Description" => "Amount of Disk Space to assign to the created server.",
             "Type" => "text",
             "Size" => 10,
         ],
         "memory" => [
-            "FriendlyName" => "Memory",
+            "FriendlyName" => "Memory (MB)",
+            "Description" => "Amount of Memory to assign to the created server.",
             "Type" => "text",
             "Size" => 10,
         ],
         "swap" => [
-            "FriendlyName" => "Swap",
+            "FriendlyName" => "Swap (MB)",
+            "Description" => "Amount of Swap to assign to the created server.",
+            "Type" => "text",
+            "Size" => 10,
+        ],
+        "location_id" => [
+            "FriendlyName" => "Location ID",
+            "Description" => "ID of the Location to automatically deploy to.",
+            "Type" => "text",
+            "Size" => 10,
+        ],
+        "node_id" => [
+            "FriendlyName" => "Node ID",
+            "Description" => "ID of the Node to deploy the server to (optional)",
+            "Type" => "text",
+            "Size" => 10,
+        ],
+        "nest_id" => [
+            "FriendlyName" => "Nest ID",
+            "Description" => "ID of the Nest for the server to use.",
+            "Type" => "text",
+            "Size" => 10,
+        ],
+        "egg_id" => [
+            "FriendlyName" => "Egg ID",
+            "Description" => "ID of the Egg for the server to use.",
             "Type" => "text",
             "Size" => 10,
         ],
         "io" => [
             "FriendlyName" => "Block IO Weight",
+            "Description" => "Block IO Adjustment number.",
             "Type" => "text",
             "Size" => 10,
             "Default" => "500",
         ],
+        "pack_id" => [
+            "FriendlyName" => "Pack ID",
+            "Description" => "ID of the Pack to install the server with (optional)",
+            "Type" => "text",
+            "Size" => 10,
+        ],
+        "startup" => [
+            "FriendlyName" => "Startup",
+            "Description" => "Custom startup command to assign to the created server (optional)",
+            "Type" => "text",
+            "Size" => 25,
+        ],
+        "image" => [
+            "FriendlyName" => "Image",
+            "Description" => "Custom Docker image to assign to the created server (optional)",
+            "Type" => "text",
+            "Size" => 25,
+        ],
     ];
 }
-
 
 function pterodactyl_TestConnection(array $params) {
     $solutions = [
@@ -136,32 +190,169 @@ function pterodactyl_TestConnection(array $params) {
     ];
 }
 
-function pterodactyl_CreateAccount() {
+function pterodactyl_GenerateUsername() {
+    $returnable = false;
+    while (!$returnable) {
+        $generated = str_random(8);
+        if (preg_match('/[A-Z]+[a-z]+[0-9]+/', $generated)) {
+            $returnable = true;
+        }
+    }
+    return $generated;
+}
 
+function pterodactyl_GetOption(array $params, $id, $default = NULL) {
+    $options = pterodactyl_ConfigOptions();
+    $friendlyName = $options[$id]['FriendlyName'];
+    if(isset($params['configoptions'][$friendlyName]) && $params['configoptions'][$friendlyName] !== '') {
+        return $params['configoptions'][$friendlyName];
+    } else if(isset($params['customfields'][$friendlyName]) && $params['customfields'][$friendlyName] !== '') {
+        return $params['customfields'][$friendlyName];
+    }
+
+    $i = 0;
+    foreach(pterodactyl_ConfigOptions() as $key => $value) {
+        $i++;
+        if($key === $id) break;
+    }
+
+    if(isset($params['configoption' . $i]) && $params['configoption' . $i] !== '') {
+        return $params['configoption' . $i];
+    }
+
+    return $default;
+}
+
+function pterodactyl_CreateAccount(array $params) {
+    try {
+        // $serverResult = pterodactyl_API($params, 'servers/external/');
+
+        $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
+        if($userResult['status_code'] === 404) {
+            $userResult = pterodactyl_API($params, 'users', [
+                'username' => pterodactyl_GenerateUsername(),
+                'email' => $params['clientsdetails']['email'],
+                'first_name' => $params['clientsdetails']['firstname'],
+                'last_name' => $params['clientsdetails']['lastname'],
+                'external_id' => $params['clientsdetails']['id'],
+            ], 'POST');
+        }
+
+        if($userResult['status_code'] === 200 || $userResult['status_code'] === 201) {
+            $userId = $userResult['attributes']['id'];
+        } else {
+            throw new Exception('Failed to create user, received error code: ' . $userResult['status_code'] . '. Enable module debug log for more info.');
+        }
+
+        $nestId = pterodactyl_GetOption($params, 'nest_id');
+        $eggId = pterodactyl_GetOption($params, 'egg_id');
+
+        // TODO: Replace with /eggs/{id} when fixed
+        $eggs = pterodactyl_API($params, 'nests/' . $nestId . '/eggs');
+        if($eggs['status_code'] !== 200) throw new Exception('Failed to get eggs, received error code: ' . $eggs['status_code'] . '. Enable module debug log for more info.');
+
+        foreach($eggs['data'] as $key => $val) {
+            if($val['attributes']['id'] == $eggId) {
+                $egg = $val;
+                break;
+            }
+        }
+
+        if(!$egg) throw new Exception('Failed to find correct egg.');
+
+        $memory = pterodactyl_GetOption($params, 'memory');
+        $swap = pterodactyl_GetOption($params, 'swap');
+        $io = pterodactyl_GetOption($params, 'io');
+        $cpu = pterodactyl_GetOption($params, 'cpu');
+        $disk = pterodactyl_GetOption($params, 'disk');
+        $pack_id = pterodactyl_GetOption($params, 'pack_id');
+        $location_id = pterodactyl_GetOption($params, 'location_id');
+        $image = pterodactyl_GetOption($params, 'image', $egg['attributes']['docker_image']);
+        $startup = pterodactyl_GetOption($params, 'startup', $egg['attributes']['startup']);
+        $serverData = [
+            'name' => pterodactyl_GenerateUsername(),
+            'user' => (int) $userId,
+            'nest' => (int) $nestId,
+            'egg' => (int) $eggId,
+            'docker_image' => $image,
+            'startup' => $startup,
+            'limits' => [
+                'memory' => (int) $memory,
+                'swap' => (int) $swap,
+                'io' => (int) $io,
+                'cpu' => (int) $cpu,
+                'disk' => (int) $disk,
+            ],
+            'deploy' => [
+                'locations' => [(int) $location_id],
+                'dedicated_ip' => false,
+                'port_range' => [],
+            ],
+            'environment' => [ // TODO: Figure out how to get environment variables from API
+                'BUNGEE_VERSION' => '1',
+                'SERVER_JARFILE' => 'latest.jar',
+            ],
+            'start_on_completion' => true,
+            'external_id' => $params['serviceid'],
+        ];
+        if(isset($pack_id)) $serverData['pack'] = (int) $pack_id;
+
+        $server = pterodactyl_API($params, 'servers', $serverData, 'POST');
+
+        if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
+    } catch(Exception $err) {
+        return $err->getMessage();
+    }
+
+    return 'success';
 }
 
 function pterodactyl_SuspendAccount() {
+    try {
 
+    } catch(Exception $err) {
+
+    }
 }
 
 function pterodactyl_UnsuspendAccount() {
+    try {
 
+    } catch(Exception $err) {
+
+    }
 }
 
 function pterodactyl_TerminateAccount() {
+    try {
 
+    } catch(Exception $err) {
+
+    }
 }
 
 function pterodactyl_ChangePassword() {
+    try {
 
+    } catch(Exception $err) {
+
+    }
 }
 
 function pterodactyl_ChangePackage() {
+    try {
 
+    } catch(Exception $err) {
+
+    }
 }
 
 function pterodactyl_ClientArea() {
+    try {
 
+    } catch(Exception $err) {
+
+    }
 }
 
 function pterodactyl_AdminArea() {
