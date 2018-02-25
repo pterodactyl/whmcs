@@ -410,7 +410,7 @@ function pterodactyl_ChangePackage(array $params) { // TODO: Fix
 
 function pterodactyl_LoginLink(array $params) {
     if($params['moduletype'] !== 'pterodactyl') return;
-    
+
     try {
         $serverId = pterodactyl_GetServerID($params);
         if(!isset($serverId)) return;
