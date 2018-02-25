@@ -28,6 +28,8 @@ if(!defined("WHMCS")) {
     die("This file cannot be accessed directly");
 }
 
+use Illuminate\Database\Capsule\Manager as Capsule;
+
 function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "GET") {
     $url = $params['serverhostname'] . '/api/application/' . $endpoint;
 
@@ -43,7 +45,7 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
         "Accept: Application/vnd.pterodactyl.v1+json",
     ];
 
-    if($method === 'POST') {
+    if($method === 'POST' || $method === 'PATCH') {
         $jsonData = json_encode($data);
         curl_setopt($curl, CURLOPT_POSTFIELDS, $jsonData);
         array_push($headers, "Content-Type: application/json");
@@ -111,11 +113,10 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 10,
         ],
-        "node_id" => [
-            "FriendlyName" => "Node ID",
-            "Description" => "ID of the Node to deploy the server to (optional)",
-            "Type" => "text",
-            "Size" => 10,
+        "dedicated_ip" => [
+            "FriendlyName" => "Dedicated IP",
+            "Description" => "Assign dedicated ip to the server (optional)",
+            "Type" => "yesno",
         ],
         "nest_id" => [
             "FriendlyName" => "Nest ID",
@@ -141,6 +142,12 @@ function pterodactyl_ConfigOptions() {
             "Description" => "ID of the Pack to install the server with (optional)",
             "Type" => "text",
             "Size" => 10,
+        ],
+        "port_range" => [
+            "FriendlyName" => "Port Range",
+            "Description" => "Port ranges seperated by comma to assign to the server (optional)",
+            "Type" => "text",
+            "Size" => 25,
         ],
         "startup" => [
             "FriendlyName" => "Startup",
@@ -193,7 +200,7 @@ function pterodactyl_TestConnection(array $params) {
 function pterodactyl_GenerateUsername() {
     $returnable = false;
     while (!$returnable) {
-        $generated = str_random(8);
+        $generated = str_random(12);
         if (preg_match('/[A-Z]+[a-z]+[0-9]+/', $generated)) {
             $returnable = true;
         }
@@ -225,7 +232,8 @@ function pterodactyl_GetOption(array $params, $id, $default = NULL) {
 
 function pterodactyl_CreateAccount(array $params) {
     try {
-        // $serverResult = pterodactyl_API($params, 'servers/external/');
+        $serverId = pterodactyl_GetServerID($params);
+        if(isset($serverId)) throw new Exception('Failed to create server because it is already created.');
 
         $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
         if($userResult['status_code'] === 404) {
@@ -247,18 +255,14 @@ function pterodactyl_CreateAccount(array $params) {
         $nestId = pterodactyl_GetOption($params, 'nest_id');
         $eggId = pterodactyl_GetOption($params, 'egg_id');
 
-        // TODO: Replace with /eggs/{id} when fixed
-        $eggs = pterodactyl_API($params, 'nests/' . $nestId . '/eggs');
-        if($eggs['status_code'] !== 200) throw new Exception('Failed to get eggs, received error code: ' . $eggs['status_code'] . '. Enable module debug log for more info.');
+        $eggData = pterodactyl_API($params, 'nests/' . $nestId . '/eggs/' . $eggId . '?include=variables');
+        if($eggData['status_code'] !== 200) throw new Exception('Failed to get egg data, received error code: ' . $eggData['status_code'] . '. Enable module debug log for more info.');
 
-        foreach($eggs['data'] as $key => $val) {
-            if($val['attributes']['id'] == $eggId) {
-                $egg = $val;
-                break;
-            }
+        $environment = [];
+        foreach($eggData['attributes']['relationships']['variables']['data'] as $key => $val) {
+            $attr = $val['attributes'];
+            $environment[$attr['env_variable']] = $attr['default_value'];
         }
-
-        if(!$egg) throw new Exception('Failed to find correct egg.');
 
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
@@ -267,8 +271,11 @@ function pterodactyl_CreateAccount(array $params) {
         $disk = pterodactyl_GetOption($params, 'disk');
         $pack_id = pterodactyl_GetOption($params, 'pack_id');
         $location_id = pterodactyl_GetOption($params, 'location_id');
-        $image = pterodactyl_GetOption($params, 'image', $egg['attributes']['docker_image']);
-        $startup = pterodactyl_GetOption($params, 'startup', $egg['attributes']['startup']);
+        $dedicated_ip = pterodactyl_GetOption($params, 'dedicated_ip') ? true : false;
+        $port_range = pterodactyl_GetOption($params, 'port_range');
+        $port_range = isset($port_range) ? explode(',', $port_range) : [];
+        $image = pterodactyl_GetOption($params, 'image', $eggData['attributes']['docker_image']);
+        $startup = pterodactyl_GetOption($params, 'startup', $eggData['attributes']['startup']);
         $serverData = [
             'name' => pterodactyl_GenerateUsername(),
             'user' => (int) $userId,
@@ -285,21 +292,21 @@ function pterodactyl_CreateAccount(array $params) {
             ],
             'deploy' => [
                 'locations' => [(int) $location_id],
-                'dedicated_ip' => false,
-                'port_range' => [],
+                'dedicated_ip' => $dedicated_ip,
+                'port_range' => $port_range,
             ],
-            'environment' => [ // TODO: Figure out how to get environment variables from API
-                'BUNGEE_VERSION' => '1',
-                'SERVER_JARFILE' => 'latest.jar',
-            ],
+            'environment' => $environment,
             'start_on_completion' => true,
-            'external_id' => $params['serviceid'],
+            'external_id' => (string) $params['serviceid'],
         ];
         if(isset($pack_id)) $serverData['pack'] = (int) $pack_id;
 
         $server = pterodactyl_API($params, 'servers', $serverData, 'POST');
 
+        if($server['status_code'] === 400) throw new Exception('Couldn\'t find any nodes satisfying the request.');
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
+
+        // TODO: Send email
     } catch(Exception $err) {
         return $err->getMessage();
     }
@@ -307,58 +314,108 @@ function pterodactyl_CreateAccount(array $params) {
     return 'success';
 }
 
-function pterodactyl_SuspendAccount() {
-    try {
+// Function to allow backwards compatibility with death-droid's module
+function pterodactyl_GetServerID(array $params) {
+    $serverResult = pterodactyl_API($params, 'servers/external/' . $params['serviceid']);
+    if($serverResult['status_code'] === 200) return $serverResult['attributes']['id'];
 
-    } catch(Exception $err) {
+    if(Capsule::schema()->hasTable('tbl_pterodactylproduct')) {
+        $oldData = Capsule::table('tbl_pterodactylproduct')
+            ->select('user_id', 'server_id')
+            ->where('service_id', '=', $params['serviceid'])
+            ->first();
 
+        if(isset($oldData) && isset($oldData['server_id'])) return $oldData['server_id'];
     }
 }
 
-function pterodactyl_UnsuspendAccount() {
+function pterodactyl_SuspendAccount(array $params) {
     try {
+        $serverId = pterodactyl_GetServerID($params);
+        if(!isset($serverId)) throw new Exception('Failed to suspend server because it doesn\'t exist.');
 
+        $suspendResult = pterodactyl_API($params, 'servers/' . $serverId . '/suspend', [], 'POST');
+        if($suspendResult['status_code'] !== 204) throw new Exception('Failed to suspend the server, received error code: ' . $suspendResult['status_code'] . '. Enable module debug log for more info.');
     } catch(Exception $err) {
-
+        return $err->getMessage();
     }
+
+    return 'success';
 }
 
-function pterodactyl_TerminateAccount() {
+function pterodactyl_UnsuspendAccount(array $params) {
     try {
+        $serverId = pterodactyl_GetServerID($params);
+        if(!isset($serverId)) throw new Exception('Failed to unsuspend server because it doesn\'t exist.');
 
+        $suspendResult = pterodactyl_API($params, 'servers/' . $serverId . '/unsuspend', [], 'POST');
+        if($suspendResult['status_code'] !== 204) throw new Exception('Failed to unsuspend the server, received error code: ' . $suspendResult['status_code'] . '. Enable module debug log for more info.');
     } catch(Exception $err) {
-
+        return $err->getMessage();
     }
+
+    return 'success';
 }
 
-function pterodactyl_ChangePassword() {
+function pterodactyl_TerminateAccount(array $params) {
     try {
+        $serverId = pterodactyl_GetServerID($params);
+        if(!isset($serverId)) throw new Exception('Failed to terminate server because it doesn\'t exist.');
 
+        $deleteResult = pterodactyl_API($params, 'servers/' . $serverId, [], 'DELETE');
+        if($deleteResult['status_code'] !== 204) throw new Exception('Failed to terminate the server, received error code: ' . $deleteResult['status_code'] . '. Enable module debug log for more info.');
     } catch(Exception $err) {
-
+        return $err->getMessage();
     }
+
+    return 'success';
 }
 
-function pterodactyl_ChangePackage() {
+function pterodactyl_ChangePassword(array $params) {
     try {
-
+        throw new Exception('Not implemented, don\'t see need for this.');
     } catch(Exception $err) {
-
+        return $err->getMessage();
     }
+
+    return 'success';
 }
 
-function pterodactyl_ClientArea() {
+function pterodactyl_ChangePackage(array $params) { // TODO: Fix
     try {
+        $serverId = pterodactyl_GetServerID($params);
+        if(!isset($serverId)) throw new Exception('Failed to change package of server because it doesn\'t exist.');
 
+        $memory = pterodactyl_GetOption($params, 'memory');
+        $swap = pterodactyl_GetOption($params, 'swap');
+        $io = pterodactyl_GetOption($params, 'io');
+        $cpu = pterodactyl_GetOption($params, 'cpu');
+        $disk = pterodactyl_GetOption($params, 'disk');
+        $updateData = [
+            'memory' => (int) $memory,
+            'swap' => (int) $swap,
+            'io' => (int) $io,
+            'cpu' => (int) $cpu,
+            'disk' => (int) $disk,
+        ];
+
+        $updateResult = pterodactyl_API($params, 'servers/' . $serverId . '/build', $updateData, 'PATCH');
+        if($updateResult['status_code'] !== 204) throw new Exception('Failed to change package of the server, received error code: ' . $updateResult['status_code'] . '. Enable module debug log for more info.');
     } catch(Exception $err) {
-
+        return $err->getMessage();
     }
+
+    return 'success';
 }
 
-function pterodactyl_AdminArea() {
+function pterodactyl_LoginLink(array $params) {
+    try {
+        $serverId = pterodactyl_GetServerID($params);
+        if(!isset($serverId)) return;
 
-}
-
-function pterodactyl_LoginLink() {
-
+        $code = '[<a href="'.$params["serverhostname"].'/admin/servers/view/' . $serverId . '" target=\"_blank\" style=\"color:#cc0000\">Go to Service</a>]';
+        echo $code;
+    } catch(Exception $err) {
+        // Ignore
+    }
 }
