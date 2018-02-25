@@ -413,8 +413,8 @@ function pterodactyl_LoginLink(array $params) {
         $serverId = pterodactyl_GetServerID($params);
         if(!isset($serverId)) return;
 
-        $code = '[<a href="'.$params["serverhostname"].'/admin/servers/view/' . $serverId . '" target=\"_blank\" style=\"color:#cc0000\">Go to Service</a>]';
-        echo $code;
+        echo '[<a href="'.$params["serverhostname"].'/admin/servers/view/' . $serverId . '" target="_blank">Go to Service</a>]';
+        echo '<p style="float: right">[<a href="https://github.com/TrixterTheTux/Pterodactyl-WHMCS/issues" target="_blank">Report A Bug</a>]</p>';
     } catch(Exception $err) {
         // Ignore
     }
