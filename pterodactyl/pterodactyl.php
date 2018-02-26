@@ -305,8 +305,6 @@ function pterodactyl_CreateAccount(array $params) {
 
         if($server['status_code'] === 400) throw new Exception('Couldn\'t find any nodes satisfying the request.');
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
-
-        // TODO: Send email
     } catch(Exception $err) {
         return $err->getMessage();
     }
@@ -315,9 +313,12 @@ function pterodactyl_CreateAccount(array $params) {
 }
 
 // Function to allow backwards compatibility with death-droid's module
-function pterodactyl_GetServerID(array $params) {
+function pterodactyl_GetServerID(array $params, $raw = false) {
     $serverResult = pterodactyl_API($params, 'servers/external/' . $params['serviceid']);
-    if($serverResult['status_code'] === 200) return $serverResult['attributes']['id'];
+    if($serverResult['status_code'] === 200) {
+        if($raw) return $serverResult;
+        else return $serverResult['attributes']['id'];
+    }
 
     if(Capsule::schema()->hasTable('tbl_pterodactylproduct')) {
         $oldData = Capsule::table('tbl_pterodactylproduct')
@@ -325,7 +326,15 @@ function pterodactyl_GetServerID(array $params) {
             ->where('service_id', '=', $params['serviceid'])
             ->first();
 
-        if(isset($oldData) && isset($oldData['server_id'])) return $oldData['server_id'];
+        if(isset($oldData) && isset($oldData['server_id'])) {
+            if($raw) {
+                $serverResult = pterodactyl_API($params, 'servers/' . $oldData['server_id']);
+                if($serverResult['status_code'] === 200) return $serverResult;
+                else throw new Exception('Failed to get server, received the error code: ' . $serverResult['status_code'] . '. Enable module debug log for more info.');
+            } else {
+                return $oldData['server_id'];
+            }
+        }
     }
 }
 
@@ -381,10 +390,11 @@ function pterodactyl_ChangePassword(array $params) {
     return 'success';
 }
 
-function pterodactyl_ChangePackage(array $params) { // TODO: Fix
+function pterodactyl_ChangePackage(array $params) {
     try {
-        $serverId = pterodactyl_GetServerID($params);
-        if(!isset($serverId)) throw new Exception('Failed to change package of server because it doesn\'t exist.');
+        $serverData = pterodactyl_GetServerID($params, true);
+        if($serverData['status_code'] === 404 || !isset($serverData['attributes']['id'])) throw new Exception('Failed to change package of server because it doesn\'t exist.');
+        $serverId = $serverData['attributes']['id'];
 
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
@@ -392,6 +402,7 @@ function pterodactyl_ChangePackage(array $params) { // TODO: Fix
         $cpu = pterodactyl_GetOption($params, 'cpu');
         $disk = pterodactyl_GetOption($params, 'disk');
         $updateData = [
+            'allocation' => $serverData['attributes']['allocation'],
             'memory' => (int) $memory,
             'swap' => (int) $swap,
             'io' => (int) $io,
@@ -400,7 +411,7 @@ function pterodactyl_ChangePackage(array $params) { // TODO: Fix
         ];
 
         $updateResult = pterodactyl_API($params, 'servers/' . $serverId . '/build', $updateData, 'PATCH');
-        if($updateResult['status_code'] !== 204) throw new Exception('Failed to change package of the server, received error code: ' . $updateResult['status_code'] . '. Enable module debug log for more info.');
+        if($updateResult['status_code'] !== 200) throw new Exception('Failed to change package of the server, received error code: ' . $updateResult['status_code'] . '. Enable module debug log for more info.');
     } catch(Exception $err) {
         return $err->getMessage();
     }
@@ -421,3 +432,5 @@ function pterodactyl_LoginLink(array $params) {
         // Ignore
     }
 }
+
+// TODO: Add fields for product page to be able to modify resources easily
