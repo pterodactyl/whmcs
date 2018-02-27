@@ -237,13 +237,24 @@ function pterodactyl_CreateAccount(array $params) {
 
         $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
         if($userResult['status_code'] === 404) {
-            $userResult = pterodactyl_API($params, 'users', [
-                'username' => pterodactyl_GenerateUsername(),
-                'email' => $params['clientsdetails']['email'],
-                'first_name' => $params['clientsdetails']['firstname'],
-                'last_name' => $params['clientsdetails']['lastname'],
-                'external_id' => $params['clientsdetails']['id'],
-            ], 'POST');
+            $userResult = pterodactyl_API($params, 'users?search=' . urlencode($params['clientsdetails']['email']));
+            if($userResult['meta']['pagination']['total'] === 0) {
+                $userResult = pterodactyl_API($params, 'users', [
+                    'username' => pterodactyl_GenerateUsername(),
+                    'email' => $params['clientsdetails']['email'],
+                    'first_name' => $params['clientsdetails']['firstname'],
+                    'last_name' => $params['clientsdetails']['lastname'],
+                    'external_id' => $params['clientsdetails']['id'],
+                ], 'POST');
+            } else {
+                foreach($userResult['data'] as $key => $value) {
+                    if($value['attributes']['email'] === $params['clientsdetails']['email']) {
+                        $userResult = array_merge($userResult, $value);
+                        break;
+                    }
+                }
+                $userResult = array_merge($userResult, $userResult['data'][0]);
+            }
         }
 
         if($userResult['status_code'] === 200 || $userResult['status_code'] === 201) {
