@@ -30,8 +30,17 @@ if(!defined("WHMCS")) {
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 
-function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "GET") {
-    $url = $params['serverhostname'] . '/api/application/' . $endpoint;
+function pterodactyl_GetHostname(array $params) {
+    $hostname = $params['serverhostname'];
+    if(ip2long($hostname) !== false) $hostname = 'http://' . $hostname;
+
+    if(substr($hostname, -1) === '/') return substr($hostname, 0, strlen($hostname) - 1);
+
+    return $hostname;
+}
+
+function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "GET", $dontLog = false) {
+    $url = pterodactyl_GetHostname($params) . '/api/application/' . $endpoint;
 
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $url);
@@ -39,6 +48,7 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
     curl_setopt($curl, CURLOPT_USERAGENT, "Pterodactyl-WHMCS");
+    curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
 
     $headers = [
         "Authorization: Bearer " . $params['serverpassword'],
@@ -55,14 +65,14 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
     $response = curl_exec($curl);
-    if(!isset($response)) logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
+    if(!isset($response) && !$dontLog) logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
 
     $responseData = json_decode($response, true);
     $responseData['status_code'] = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
     curl_close($curl);
 
-    logModuleCall("Pterodactyl-WHMCS", $method . " - " . $url,
+    if(!$dontLog) logModuleCall("Pterodactyl-WHMCS", $method . " - " . $url,
         isset($data) ? json_encode($data) : "",
         print_r($responseData, true));
 
@@ -132,7 +142,7 @@ function pterodactyl_ConfigOptions() {
         ],
         "io" => [
             "FriendlyName" => "Block IO Weight",
-            "Description" => "Block IO Adjustment number.",
+            "Description" => "Block IO Adjustment number (10-1000)",
             "Type" => "text",
             "Size" => 10,
             "Default" => "500",
@@ -166,6 +176,7 @@ function pterodactyl_ConfigOptions() {
 
 function pterodactyl_TestConnection(array $params) {
     $solutions = [
+        0 => "Most likely hostname is configured wrong causing the request never get executed.",
         401 => "Authorization header either missing or not provided.",
         403 => "Double check the password (which should be the Application Key).",
         404 => "Result not found.",
@@ -197,10 +208,10 @@ function pterodactyl_TestConnection(array $params) {
     ];
 }
 
-function pterodactyl_GenerateUsername() {
+function pterodactyl_GenerateUsername($length = 8) {
     $returnable = false;
     while (!$returnable) {
-        $generated = str_random(12);
+        $generated = str_random($length);
         if (preg_match('/[A-Z]+[a-z]+[0-9]+/', $generated)) {
             $returnable = true;
         }
@@ -210,11 +221,16 @@ function pterodactyl_GenerateUsername() {
 
 function pterodactyl_GetOption(array $params, $id, $default = NULL) {
     $options = pterodactyl_ConfigOptions();
+
     $friendlyName = $options[$id]['FriendlyName'];
     if(isset($params['configoptions'][$friendlyName]) && $params['configoptions'][$friendlyName] !== '') {
         return $params['configoptions'][$friendlyName];
+    } else if(isset($params['configoptions'][$id]) && $params['configoptions'][$id] !== '') {
+        return $params['configoptions'][$id];
     } else if(isset($params['customfields'][$friendlyName]) && $params['customfields'][$friendlyName] !== '') {
         return $params['customfields'][$friendlyName];
+    } else if(isset($params['customfields'][$id]) && $params['customfields'][$id] !== '') {
+        return $params['customfields'][$id];
     }
 
     $i = 0;
@@ -272,7 +288,14 @@ function pterodactyl_CreateAccount(array $params) {
         $environment = [];
         foreach($eggData['attributes']['relationships']['variables']['data'] as $key => $val) {
             $attr = $val['attributes'];
-            $environment[$attr['env_variable']] = $attr['default_value'];
+            $var = $attr['env_variable'];
+            $default = $attr['default_value'];
+            $friendlyName = pterodactyl_GetOption($params, $attr['name']);
+            $envName = pterodactyl_GetOption($params, $attr['env_variable']);
+
+            if(isset($friendlyName)) $environment[$var] = $friendlyName;
+            elseif(isset($envName)) $environment[$var] = $envName;
+            else $environment[$var] = $default;
         }
 
         $memory = pterodactyl_GetOption($params, 'memory');
@@ -288,7 +311,7 @@ function pterodactyl_CreateAccount(array $params) {
         $image = pterodactyl_GetOption($params, 'image', $eggData['attributes']['docker_image']);
         $startup = pterodactyl_GetOption($params, 'startup', $eggData['attributes']['startup']);
         $serverData = [
-            'name' => pterodactyl_GenerateUsername(),
+            'name' => pterodactyl_GenerateUsername() . '_' . $params['serviceid'],
             'user' => (int) $userId,
             'nest' => (int) $nestId,
             'egg' => (int) $eggId,
@@ -325,7 +348,7 @@ function pterodactyl_CreateAccount(array $params) {
 
 // Function to allow backwards compatibility with death-droid's module
 function pterodactyl_GetServerID(array $params, $raw = false) {
-    $serverResult = pterodactyl_API($params, 'servers/external/' . $params['serviceid']);
+    $serverResult = pterodactyl_API($params, 'servers/external/' . $params['serviceid'], [], 'GET', true);
     if($serverResult['status_code'] === 200) {
         if($raw) return $serverResult;
         else return $serverResult['attributes']['id'];
@@ -422,7 +445,39 @@ function pterodactyl_ChangePackage(array $params) {
         ];
 
         $updateResult = pterodactyl_API($params, 'servers/' . $serverId . '/build', $updateData, 'PATCH');
-        if($updateResult['status_code'] !== 200) throw new Exception('Failed to change package of the server, received error code: ' . $updateResult['status_code'] . '. Enable module debug log for more info.');
+        if($updateResult['status_code'] !== 200) throw new Exception('Failed to update build of the server, received error code: ' . $updateResult['status_code'] . '. Enable module debug log for more info.');
+
+        $nestId = pterodactyl_GetOption($params, 'nest_id');
+        $eggId = pterodactyl_GetOption($params, 'egg_id');
+        $pack_id = pterodactyl_GetOption($params, 'pack_id');
+        $eggData = pterodactyl_API($params, 'nests/' . $nestId . '/eggs/' . $eggId . '?include=variables');
+        if($eggData['status_code'] !== 200) throw new Exception('Failed to get egg data, received error code: ' . $eggData['status_code'] . '. Enable module debug log for more info.');
+
+        $environment = [];
+        foreach($eggData['attributes']['relationships']['variables']['data'] as $key => $val) {
+            $attr = $val['attributes'];
+            $var = $attr['env_variable'];
+            $friendlyName = pterodactyl_GetOption($params, $attr['name']);
+            $envName = pterodactyl_GetOption($params, $attr['env_variable']);
+
+            if(isset($friendlyName)) $environment[$var] = $friendlyName;
+            elseif(isset($envName)) $environment[$var] = $envName;
+            else $environment[$var] = $serverData['attributes']['container']['environment'][$var];
+        }
+
+        $image = pterodactyl_GetOption($params, 'image', $serverData['attributes']['container']['image']);
+        $startup = pterodactyl_GetOption($params, 'startup', $serverData['attributes']['container']['startup_command']);
+        $updateData = [
+            'environment' => $environment,
+            'startup' => $startup,
+            'egg' => (int) $eggId,
+            'pack' => (int) $pack_id,
+            'image' => $image,
+            'skip_scripts' => true,
+        ];
+
+        $updateResult = pterodactyl_API($params, 'servers/' . $serverId . '/startup', $updateData, 'PATCH');
+        if($updateResult['status_code'] !== 200) throw new Exception('Failed to update startup of the server, received error code: ' . $updateResult['status_code'] . '. Enable module debug log for more info.');
     } catch(Exception $err) {
         return $err->getMessage();
     }
@@ -437,8 +492,7 @@ function pterodactyl_LoginLink(array $params) {
         $serverId = pterodactyl_GetServerID($params);
         if(!isset($serverId)) return;
 
-        $hostname = $params['serverhostname'];
-        if(ip2long($hostname) !== false) $hostname = 'http://' . $hostname;
+        $hostname = pterodactyl_GetHostname($params);
         echo '[<a href="'.$hostname.'/admin/servers/view/' . $serverId . '" target="_blank">Go to Service</a>]';
         echo '<p style="float: right">[<a href="https://github.com/TrixterTheTux/Pterodactyl-WHMCS/issues" target="_blank">Report A Bug</a>]</p>';
     } catch(Exception $err) {
@@ -446,4 +500,22 @@ function pterodactyl_LoginLink(array $params) {
     }
 }
 
-// TODO: Add fields for product page to be able to modify resources easily
+function pterodactyl_ClientArea(array $params) {
+    if($params['moduletype'] !== 'pterodactyl') return;
+
+    try {
+        $serverData = pterodactyl_GetServerID($params, true);
+        if($serverData['status_code'] === 404 || !isset($serverData['attributes']['id'])) return;
+
+        $hostname = pterodactyl_GetHostname($params);
+
+        return [
+            'templatefile' => 'clientarea',
+            'vars' => [
+                'serviceurl' => $hostname . '/server/' . $serverData['attributes']['identifier'],
+            ],
+        ];
+    } catch (Exception $err) {
+        // Ignore
+    }
+}

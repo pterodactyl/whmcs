@@ -12,13 +12,30 @@ This module requires the panel to be on version 0.7.3 and above, if you need one
 3. Create API Credentials with these permissions: ![Image](https://my-cat.is-going-to.space/fa1eee.png)
 4. In WHMCS navigate to Setup > Products/Services > Servers
 5. Create new server, fill the name with anything you want, hostname as the url to the panel either as an IP or domain. For example: http://123.123.123.123 or http://my.pterodactyl.panel/
-6. Change Server Type to Pterodactyl, fill the password field with your generated API Key.
+6. Change Server Type to Pterodactyl, leave username empty, fill the password field with your generated API Key.
 7. Confirm everything works by clicking the Test Connection button -> Save Changes.
 8. Go back to the Servers screen and press Create New Group, name it anything you want and choose the created server and press the Add button, Save Changes.
 9. Navigate to Setup > Products/Services > Products/Services
 10. Create your desired product (and product group if you haven't already) with the type of Other and product name of anything -> Continue.
 11. Click the Module Settings tab, choose for Module Name Pterodactyl and for the Server Group the group you created in step 8.
 12. Fill all non-optional fields, and you are good to go!
+
+### Migrating from death-droid's module
+Migrating is simple, delete death-droid's module and then upload this one instead of it.  
+Then do the steps 3-6 in Installation instructions above and resetup all products.  
+
+### Overwriting values through configurable options
+Overwriting values can be done through either Configurable Options or Custom Fields.  
+
+Their name should be exactly what you want to overwrite.  
+dedicated_ip => Will overwrite dedicated_ip if its ticked or not.  
+Valid options: memory, swap, io, cpu, disk, pack_id, location_id, dedicated_ip, port_range, image, startup  
+
+This also works for any name of environment variable:  
+Player Slots => Will overwrite the environment variable named "Player Slots" to its value.  
+
+Useful trick: You can use the | seperator to change the display name of the variable like this:  
+dedicated_ip|Dedicated IP => Will be displayed as "Dedicated IP" but will work correctly.  
 
 ### How to enable module debug log
 1. In WHMCS navigate to Utilities > Logs > Module Log
