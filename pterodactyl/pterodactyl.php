@@ -369,13 +369,13 @@ function pterodactyl_GetServerID(array $params, $raw = false) {
             ->where('service_id', '=', $params['serviceid'])
             ->first();
 
-        if(isset($oldData) && isset($oldData['server_id'])) {
+        if(isset($oldData) && isset($oldData->server_id)) {
             if($raw) {
-                $serverResult = pterodactyl_API($params, 'servers/' . $oldData['server_id']);
+                $serverResult = pterodactyl_API($params, 'servers/' . $oldData->server_id);
                 if($serverResult['status_code'] === 200) return $serverResult;
                 else throw new Exception('Failed to get server, received the error code: ' . $serverResult['status_code'] . '. Enable module debug log for more info.');
             } else {
-                return $oldData['server_id'];
+                return $oldData->server_id;
             }
         }
     }
