@@ -49,6 +49,7 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     curl_setopt($curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
     curl_setopt($curl, CURLOPT_USERAGENT, "Pterodactyl-WHMCS");
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 5);
 
     $headers = [
         "Authorization: Bearer " . $params['serverpassword'],
@@ -233,13 +234,17 @@ function pterodactyl_GetOption(array $params, $id, $default = NULL) {
         return $params['customfields'][$id];
     }
 
+    $found = false;
     $i = 0;
     foreach(pterodactyl_ConfigOptions() as $key => $value) {
         $i++;
-        if($key === $id) break;
+        if($key === $id) {
+            $found = true;
+            break;
+        }
     }
 
-    if(isset($params['configoption' . $i]) && $params['configoption' . $i] !== '') {
+    if($found && isset($params['configoption' . $i]) && $params['configoption' . $i] !== '') {
         return $params['configoption' . $i];
     }
 
@@ -323,6 +328,10 @@ function pterodactyl_CreateAccount(array $params) {
                 'io' => (int) $io,
                 'cpu' => (int) $cpu,
                 'disk' => (int) $disk,
+            ],
+            'feature_limits' => [
+                'databases' => 0,
+                'allocations' => 0,
             ],
             'deploy' => [
                 'locations' => [(int) $location_id],
