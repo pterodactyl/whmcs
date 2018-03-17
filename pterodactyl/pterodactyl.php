@@ -315,6 +315,8 @@ function pterodactyl_CreateAccount(array $params) {
         $port_range = isset($port_range) ? explode(',', $port_range) : [];
         $image = pterodactyl_GetOption($params, 'image', $eggData['attributes']['docker_image']);
         $startup = pterodactyl_GetOption($params, 'startup', $eggData['attributes']['startup']);
+        $databases = pterodactyl_GetOption($params, 'databases');
+        $allocations = pterodactyl_GetOption($params, 'options');
         $serverData = [
             'name' => pterodactyl_GenerateUsername() . '_' . $params['serviceid'],
             'user' => (int) $userId,
@@ -330,8 +332,8 @@ function pterodactyl_CreateAccount(array $params) {
                 'disk' => (int) $disk,
             ],
             'feature_limits' => [
-                'databases' => 0,
-                'allocations' => 0,
+                'databases' => (int) $databases,
+                'allocations' => (int) $allocations,
             ],
             'deploy' => [
                 'locations' => [(int) $location_id],
@@ -444,6 +446,8 @@ function pterodactyl_ChangePackage(array $params) {
         $io = pterodactyl_GetOption($params, 'io');
         $cpu = pterodactyl_GetOption($params, 'cpu');
         $disk = pterodactyl_GetOption($params, 'disk');
+        $databases = pterodactyl_GetOption($params, 'databases');
+        $allocations = pterodactyl_GetOption($params, 'options');
         $updateData = [
             'allocation' => $serverData['attributes']['allocation'],
             'memory' => (int) $memory,
@@ -451,6 +455,10 @@ function pterodactyl_ChangePackage(array $params) {
             'io' => (int) $io,
             'cpu' => (int) $cpu,
             'disk' => (int) $disk,
+            'feature_limits' => [
+                'databases' => (int) $databases,
+                'allocations' => (int) $allocations,
+            ],
         ];
 
         $updateResult = pterodactyl_API($params, 'servers/' . $serverId . '/build', $updateData, 'PATCH');
