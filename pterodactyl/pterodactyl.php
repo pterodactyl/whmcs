@@ -156,7 +156,7 @@ function pterodactyl_ConfigOptions() {
         ],
         "port_range" => [
             "FriendlyName" => "Port Range",
-            "Description" => "Port ranges seperated by comma to assign to the server (optional)",
+            "Description" => "Port ranges seperated by comma to assign to the server (Example: 25565-25570,25580-25590) (optional)",
             "Type" => "text",
             "Size" => 25,
         ],
@@ -171,6 +171,12 @@ function pterodactyl_ConfigOptions() {
             "Description" => "Custom Docker image to assign to the created server (optional)",
             "Type" => "text",
             "Size" => 25,
+        ],
+        "databases" => [
+            "FriendlyName" => "Databases",
+            "Description" => "Client will be able to create this amount of databases for his server (optional)",
+            "Type" => "text",
+            "Size" => 10,
         ],
     ];
 }
