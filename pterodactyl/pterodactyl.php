@@ -174,7 +174,7 @@ function pterodactyl_ConfigOptions() {
         ],
         "databases" => [
             "FriendlyName" => "Databases",
-            "Description" => "Client will be able to create this amount of databases for his server (optional)",
+            "Description" => "Client will be able to create this amount of databases for their server (optional)",
             "Type" => "text",
             "Size" => 10,
         ],
