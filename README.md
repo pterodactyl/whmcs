@@ -9,7 +9,7 @@ This module requires the panel to be on version 0.7.3 and above, if you need one
 
 1. Download/Git clone this repository.  
 2. Move the ``pterodactyl/`` folder into ``<path to whmcs>/modules/servers/``.
-3. Create API Credentials with these permissions: ![Image](https://my-cat.is-going-to.space/fa1eee.png)
+3. Create API Credentials with these permissions: ![Image](https://owo.sh/fa1eee.png)
 4. In WHMCS navigate to Setup > Products/Services > Servers
 5. Create new server, fill the name with anything you want, hostname as the url to the panel either as an IP or domain. For example: ``http://123.123.123.123`` or ``http://my.pterodactyl.panel/``
 6. Change Server Type to Pterodactyl, leave username empty, fill the password field with your generated API Key.
