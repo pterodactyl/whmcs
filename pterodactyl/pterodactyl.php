@@ -66,10 +66,10 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
     $response = curl_exec($curl);
-    if(!isset($response) && !$dontLog) logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
-
     $responseData = json_decode($response, true);
     $responseData['status_code'] = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    
+    if($responseData['status_code'] === 0 && !$dontLog) logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
 
     curl_close($curl);
 
