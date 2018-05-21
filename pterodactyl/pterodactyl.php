@@ -178,9 +178,9 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 10,
         ],
-		"server_name" => [
+	"server_name" => [
             "FriendlyName" => "Server Name",
-            "Description" => "The name of the server as shown on the panel(Optional)",
+            "Description" => "The name of the server as shown on the panel (optional)",
             "Type" => "text",
             "Size" => 25,
         ],
@@ -314,6 +314,7 @@ function pterodactyl_CreateAccount(array $params) {
             elseif(isset($envName)) $environment[$var] = $envName;
             else $environment[$var] = $default;
         }
+
         $name = pterodactyl_GetOption($params, 'server_name', pterodactyl_GenerateUsername() . '_' . $params['serviceid']);
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
