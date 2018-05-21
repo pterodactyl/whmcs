@@ -178,6 +178,12 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 10,
         ],
+		"server_name" => [
+            "FriendlyName" => "Server Name",
+            "Description" => "The name of the server as shown on the panel(Optional)",
+            "Type" => "text",
+            "Size" => 25,
+        ],
     ];
 }
 
@@ -308,7 +314,7 @@ function pterodactyl_CreateAccount(array $params) {
             elseif(isset($envName)) $environment[$var] = $envName;
             else $environment[$var] = $default;
         }
-
+        $name = pterodactyl_GetOption($params, 'server_name', pterodactyl_GenerateUsername() . '_' . $params['serviceid']);
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
         $io = pterodactyl_GetOption($params, 'io');
@@ -324,7 +330,7 @@ function pterodactyl_CreateAccount(array $params) {
         $databases = pterodactyl_GetOption($params, 'databases');
         $allocations = pterodactyl_GetOption($params, 'options');
         $serverData = [
-            'name' => pterodactyl_GenerateUsername() . '_' . $params['serviceid'],
+            'name' => $name,
             'user' => (int) $userId,
             'nest' => (int) $nestId,
             'egg' => (int) $eggId,
