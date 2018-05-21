@@ -94,6 +94,13 @@ function pterodactyl_MetaData() {
 
 function pterodactyl_ConfigOptions() {
     return [
+        "server_name" => [
+            "FriendlyName" => "Server Name",
+            "Description" => "The name of the server as shown on the panel",
+            "Type" => "text",
+            "Size" => 30,
+            "Default" => "New Game Server",
+        ],
         "cpu" => [
             "FriendlyName" => "CPU Limit (%)",
             "Description" => "Amount of CPU to assign to the created server.",
@@ -308,7 +315,12 @@ function pterodactyl_CreateAccount(array $params) {
             elseif(isset($envName)) $environment[$var] = $envName;
             else $environment[$var] = $default;
         }
-
+        if (empty(pterodactyl_GetOption($params, 'server_name'))){
+            $name = pterodactyl_GenerateUsername() . '_' . $params['serviceid'];
+        }
+        else{
+            $name = pterodactyl_GetOption($params, 'server_name');
+        }
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
         $io = pterodactyl_GetOption($params, 'io');
@@ -324,7 +336,7 @@ function pterodactyl_CreateAccount(array $params) {
         $databases = pterodactyl_GetOption($params, 'databases');
         $allocations = pterodactyl_GetOption($params, 'options');
         $serverData = [
-            'name' => pterodactyl_GenerateUsername() . '_' . $params['serviceid'],
+            'name' => (string) $name,
             'user' => (int) $userId,
             'nest' => (int) $nestId,
             'egg' => (int) $eggId,
