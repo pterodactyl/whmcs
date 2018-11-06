@@ -345,7 +345,7 @@ function pterodactyl_CreateAccount(array $params) {
                 'disk' => (int) $disk,
             ],
             'feature_limits' => [
-                'databases' => (int) $databases,
+                'databases' => $databases ? (int) $databases : null,
                 'allocations' => (int) $allocations,
             ],
             'deploy' => [
