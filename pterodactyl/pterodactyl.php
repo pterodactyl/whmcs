@@ -492,7 +492,8 @@ function pterodactyl_ChangePackage(array $params) {
 
             if(isset($friendlyName)) $environment[$var] = $friendlyName;
             elseif(isset($envName)) $environment[$var] = $envName;
-            else $environment[$var] = $serverData['attributes']['container']['environment'][$var];
+            elseif(isset($serverData['attributes']['container']['environment'][$var])) $environment[$var] = $serverData['attributes']['container']['environment'][$var];
+            elseif(isset($attr['default_value'])) $environment[$var] = $attr['default_value'];
         }
 
         $image = pterodactyl_GetOption($params, 'image', $serverData['attributes']['container']['image']);
