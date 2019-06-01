@@ -504,7 +504,7 @@ function pterodactyl_ChangePackage(array $params) {
             'egg' => (int) $eggId,
             'pack' => (int) $pack_id,
             'image' => $image,
-            'skip_scripts' => true,
+            'skip_scripts' => false,
         ];
 
         $updateResult = pterodactyl_API($params, 'servers/' . $serverId . '/startup', $updateData, 'PATCH');
