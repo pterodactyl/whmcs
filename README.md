@@ -1,11 +1,11 @@
-## Pterodactyl-WHMCS
-WHMCS Module for the [Pterodactyl Panel](https://github.com/Pterodactyl/Panel/).
+## WHMCS
+WHMCS Module for the [Pterodactyl Panel](https://github.com/pterodactyl/panel/).
 
 ## Configuration support
 Please use the [Pterodactyl Discord](https://discord.gg/pterodactyl) for configuration related support instead of GitHub issues.
 
 ## NOTE!
-This module requires the panel to be on version 0.7.3 and above, if you need one for other versions check out [death-droid's module](https://github.com/death-droid/Pterodactyl-WHMCS).
+This module requires the panel to be on version 0.7.3 and above, if you need one for lower than 0.7.x versions check out [death-droid's module](https://github.com/death-droid/Pterodactyl-WHMCS).
 
 ## Installation
 [Video Tutorial](https://www.youtube.com/watch?v=wURpRD9vfj4)  
