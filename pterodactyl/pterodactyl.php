@@ -267,14 +267,15 @@ function pterodactyl_CreateAccount(array $params) {
     try {
         $serverId = pterodactyl_GetServerID($params);
         if(isset($serverId)) throw new Exception('Failed to create server because it is already created.');
-
+         
+	$userPrefix = 'pterodactyl';
         $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
         if($userResult['status_code'] === 404) {
             $userResult = pterodactyl_API($params, 'users?search=' . urlencode($params['clientsdetails']['email']));
             if($userResult['meta']['pagination']['total'] === 0) {
                 $userResult = pterodactyl_API($params, 'users', [
-                    'username' => pterodactyl_GenerateUsername(),
-	            'password' =>  $params['password'],
+                    'username' => $userPrefix . '_' . $params['clientsdetails']['id'],
+                    'password' =>  $params['password'],
                     'email' => $params['clientsdetails']['email'],
                     'first_name' => $params['clientsdetails']['firstname'],
                     'last_name' => $params['clientsdetails']['lastname'],
@@ -316,7 +317,7 @@ function pterodactyl_CreateAccount(array $params) {
             else $environment[$var] = $default;
         }
 
-        $name = pterodactyl_GetOption($params, 'server_name', pterodactyl_GenerateUsername() . '_' . $params['serviceid']);
+        $name = pterodactyl_GetOption($params, 'server_name', $userPrefix . '_' . $params['serviceid']);
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
         $io = pterodactyl_GetOption($params, 'io');
