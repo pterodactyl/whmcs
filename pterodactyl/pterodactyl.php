@@ -376,6 +376,8 @@ function pterodactyl_GetServerID(array $params, $raw = false) {
     if($serverResult['status_code'] === 200) {
         if($raw) return $serverResult;
         else return $serverResult['attributes']['id'];
+    } else if($serverResult['status_code'] === 500) {
+        throw new Exception('Failed to get server, panel errored. Check panel logs for more info.');
     }
 
     if(Capsule::schema()->hasTable('tbl_pterodactylproduct')) {
