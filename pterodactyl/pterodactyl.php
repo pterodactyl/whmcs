@@ -178,11 +178,16 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 10,
         ],
-	"server_name" => [
+	    "server_name" => [
             "FriendlyName" => "Server Name",
             "Description" => "The name of the server as shown on the panel (optional)",
             "Type" => "text",
             "Size" => 25,
+        ],
+        "oom_disabled" => [
+            "FriendlyName" => "Disable OOM Killer",
+            "Description" => "Should the Out Of Memory Killer be disabled (optional)",
+            "Type" => "yesno",
         ],
     ];
 }
@@ -330,6 +335,7 @@ function pterodactyl_CreateAccount(array $params) {
         $startup = pterodactyl_GetOption($params, 'startup', $eggData['attributes']['startup']);
         $databases = pterodactyl_GetOption($params, 'databases');
         $allocations = pterodactyl_GetOption($params, 'options');
+        $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
         $serverData = [
             'name' => $name,
             'user' => (int) $userId,
@@ -337,6 +343,7 @@ function pterodactyl_CreateAccount(array $params) {
             'egg' => (int) $eggId,
             'docker_image' => $image,
             'startup' => $startup,
+            'oom_disabled' => $oom_disabled,
             'limits' => [
                 'memory' => (int) $memory,
                 'swap' => (int) $swap,
@@ -463,6 +470,7 @@ function pterodactyl_ChangePackage(array $params) {
         $disk = pterodactyl_GetOption($params, 'disk');
         $databases = pterodactyl_GetOption($params, 'databases');
         $allocations = pterodactyl_GetOption($params, 'options');
+        $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
         $updateData = [
             'allocation' => $serverData['attributes']['allocation'],
             'memory' => (int) $memory,
@@ -470,6 +478,7 @@ function pterodactyl_ChangePackage(array $params) {
             'io' => (int) $io,
             'cpu' => (int) $cpu,
             'disk' => (int) $disk,
+            'oom_disabled' => $oom_disabled,
             'feature_limits' => [
                 'databases' => (int) $databases,
                 'allocations' => (int) $allocations,
