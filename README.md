@@ -14,7 +14,7 @@ This module requires the panel to be on version 0.7.3 and above, if you need one
 2. Move the ``pterodactyl/`` folder into ``<path to whmcs>/modules/servers/``.
 3. Create API Credentials with these permissions: ![Image](https://owo.sh/fa1eee.png)
 4. In WHMCS navigate to Setup > Products/Services > Servers
-5. Create new server, fill the name with anything you want, hostname as the url to the panel either as an IP or domain. For example: ``http://123.123.123.123`` or ``http://my.pterodactyl.panel/``
+5. Create new server, fill the name with anything you want, hostname as the url to the panel either as an IP or domain. For example: ``123.123.123.123`` or ``my.pterodactyl.panel``
 6. Change Server Type to Pterodactyl, leave username empty, fill the password field with your generated API Key.
 7. Confirm that everything works by clicking the Test Connection button -> Save Changes.
 8. Go back to the Servers screen and press Create New Group, name it anything you want and choose the created server and press the Add button, Save Changes.
