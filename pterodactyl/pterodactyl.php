@@ -3,7 +3,7 @@
 /**
 MIT License
 
-Copyright (c) 2018 Stepan Fedotov <stepan@crident.com>
+Copyright (c) 2018-2019 Stepan Fedotov <stepan@crident.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,10 +33,9 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 function pterodactyl_GetHostname(array $params) {
     $hostname = $params['serverhostname'];
     if(ip2long($hostname) !== false) $hostname = 'http://' . $hostname;
+    else $hostname = ($params['serversecure'] ? 'https://' : 'http://') . $hostname;
 
-    if(substr($hostname, -1) === '/') return substr($hostname, 0, strlen($hostname) - 1);
-
-    return $hostname;
+    return rtrim($hostname, '/');
 }
 
 function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "GET", $dontLog = false) {
