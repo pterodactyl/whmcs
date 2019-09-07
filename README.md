@@ -16,12 +16,13 @@ This module requires the panel to be on version 0.7.3 and above, if you need one
 4. In WHMCS navigate to Setup > Products/Services > Servers
 5. Create new server, fill the name with anything you want, hostname as the url to the panel either as an IP or domain. For example: ``123.123.123.123`` or ``my.pterodactyl.panel``
 6. Change Server Type to Pterodactyl, leave username empty, fill the password field with your generated API Key.
-7. Confirm that everything works by clicking the Test Connection button -> Save Changes.
-8. Go back to the Servers screen and press Create New Group, name it anything you want and choose the created server and press the Add button, Save Changes.
-9. Navigate to Setup > Products/Services > Products/Services
-10. Create your desired product (and product group if you haven't already) with the type of Other and product name of anything -> Continue.
-11. Click the Module Settings tab, choose for Module Name Pterodactyl and for the Server Group the group you created in step 8.
-12. Fill all non-optional fields, and you are good to go!
+7. Tick the "Secure" option if your panel is using SSL.
+8. Confirm that everything works by clicking the Test Connection button -> Save Changes.
+9. Go back to the Servers screen and press Create New Group, name it anything you want and choose the created server and press the Add button, Save Changes.
+10. Navigate to Setup > Products/Services > Products/Services
+11. Create your desired product (and product group if you haven't already) with the type of Other and product name of anything -> Continue.
+12. Click the Module Settings tab, choose for Module Name Pterodactyl and for the Server Group the group you created in step 8.
+13. Fill all non-optional fields, and you are good to go!
 
 ## Migrating from death-droid's module
 Migrating is simple, delete death-droid's module and then upload this one instead of it.  
