@@ -33,7 +33,7 @@ Overwriting values can be done through either Configurable Options or Custom Fie
 
 Their name should be exactly what you want to overwrite.  
 dedicated_ip => Will overwrite dedicated_ip if its ticked or not.  
-Valid options: ``server_name, memory, swap, io, cpu, disk, nest_id, egg_id, pack_id, location_id, dedicated_ip, port_range, image, startup, databases, allocations, oom_disabled``
+Valid options: ``server_name, memory, swap, io, cpu, disk, nest_id, egg_id, pack_id, location_id, dedicated_ip, port_range, image, startup, databases, allocations, oom_disabled, username``
 
 This also works for any name of environment variable:  
 Player Slots => Will overwrite the environment variable named "Player Slots" to its value.  
