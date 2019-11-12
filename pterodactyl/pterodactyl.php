@@ -334,7 +334,7 @@ function pterodactyl_CreateAccount(array $params) {
         $image = pterodactyl_GetOption($params, 'image', $eggData['attributes']['docker_image']);
         $startup = pterodactyl_GetOption($params, 'startup', $eggData['attributes']['startup']);
         $databases = pterodactyl_GetOption($params, 'databases');
-        $allocations = pterodactyl_GetOption($params, 'options');
+        $allocations = pterodactyl_GetOption($params, 'allocations');
         $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
         $serverData = [
             'name' => $name,
@@ -469,7 +469,7 @@ function pterodactyl_ChangePackage(array $params) {
         $cpu = pterodactyl_GetOption($params, 'cpu');
         $disk = pterodactyl_GetOption($params, 'disk');
         $databases = pterodactyl_GetOption($params, 'databases');
-        $allocations = pterodactyl_GetOption($params, 'options');
+        $allocations = pterodactyl_GetOption($params, 'allocations');
         $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
         $updateData = [
             'allocation' => $serverData['attributes']['allocation'],
