@@ -203,7 +203,7 @@ function pterodactyl_ConfigOptions() {
 
 function pterodactyl_TestConnection(array $params) {
     $solutions = [
-        0 => "Most likely hostname is configured wrong causing the request never get executed.",
+        0 => "Check module debug log for more detailed error.",
         401 => "Authorization header either missing or not provided.",
         403 => "Double check the password (which should be the Application Key).",
         404 => "Result not found.",
