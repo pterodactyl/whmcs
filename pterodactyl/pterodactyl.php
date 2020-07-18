@@ -465,7 +465,30 @@ function pterodactyl_TerminateAccount(array $params) {
 
 function pterodactyl_ChangePassword(array $params) {
     try {
-        throw new Exception('Not implemented, don\'t see need for this.');
+        if($params['password'] === '') throw new Exception('The password cannot be empty.');
+
+        $serverData = pterodactyl_GetServerID($params, true);
+        if(!isset($serverData)) throw new Exception('Failed to change password because linked server doesn\'t exist.');
+
+        $userId = $serverData['attributes']['user'];
+        $userResult = pterodactyl_API($params, 'users/' . $userId);
+        if($userResult['status_code'] !== 200) throw new Exception('Failed to retrieve user, received error code: ' . $userResult['status_code'] . '.');
+
+        $updateResult = pterodactyl_API($params, 'users/' . $serverData['attributes']['user'], [
+            'username' => $userResult['attributes']['username'],
+            'email' => $userResult['attributes']['email'],
+            'first_name' => $userResult['attributes']['first_name'],
+            'last_name' => $userResult['attributes']['last_name'],
+
+            'password' => $params['password'],
+        ], 'PATCH');
+        if($updateResult['status_code'] !== 200) throw new Exception('Failed to change password, received error code: ' . $updateResult['status_code'] . '.');
+
+        unset($params['password']);
+        Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
+            'username' => '',
+            'password' => '',
+        ]);
     } catch(Exception $err) {
         return $err->getMessage();
     }
