@@ -380,6 +380,12 @@ function pterodactyl_CreateAccount(array $params) {
 
         if($server['status_code'] === 400) throw new Exception('Couldn\'t find any nodes satisfying the request.');
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
+
+        unset($params['password']);
+        Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
+            'username' => '',
+            'password' => '',
+        ]);
     } catch(Exception $err) {
         return $err->getMessage();
     }
