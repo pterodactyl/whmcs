@@ -32,15 +32,16 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 
 function pterodactyl_GetHostname(array $params) {
     $hostname = $params['serverhostname'];
+    if ($hostname === '') throw new Exception('Could not find the panel\'s hostname - did you configure server group for the product?');
 
     // For whatever reason, WHMCS converts some characters of the hostname to their literal meanings (- => dash, etc) in some cases
     foreach([
         'DOT' => '.',
         'DASH' => '-',
     ] as $from => $to) {
-	$hostname = str_replace($from, $to, $hostname);
+        $hostname = str_replace($from, $to, $hostname);
     }
-	
+
     if(ip2long($hostname) !== false) $hostname = 'http://' . $hostname;
     else $hostname = ($params['serversecure'] ? 'https://' : 'http://') . $hostname;
 
