@@ -287,8 +287,10 @@ function pterodactyl_CreateAccount(array $params) {
         if($userResult['status_code'] === 404) {
             $userResult = pterodactyl_API($params, 'users?search=' . urlencode($params['clientsdetails']['email']));
             if($userResult['meta']['pagination']['total'] === 0) {
+		$ptero_username = pterodactyl_GetOption($params, 'username', pterodactyl_GenerateUsername());
                 $userResult = pterodactyl_API($params, 'users', [
-                    'username' => pterodactyl_GetOption($params, 'username', pterodactyl_GenerateUsername()),
+                    'username' => $ptero_username,
+		    'password' => $params['password'],
                     'email' => $params['clientsdetails']['email'],
                     'first_name' => $params['clientsdetails']['firstname'],
                     'last_name' => $params['clientsdetails']['lastname'],
@@ -381,10 +383,9 @@ function pterodactyl_CreateAccount(array $params) {
         if($server['status_code'] === 400) throw new Exception('Couldn\'t find any nodes satisfying the request.');
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
 
-        unset($params['password']);
+        //unset($params['password']);
         Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
-            'username' => '',
-            'password' => '',
+            'username' => $ptero_username
         ]);
     } catch(Exception $err) {
         return $err->getMessage();
@@ -484,10 +485,10 @@ function pterodactyl_ChangePassword(array $params) {
         ], 'PATCH');
         if($updateResult['status_code'] !== 200) throw new Exception('Failed to change password, received error code: ' . $updateResult['status_code'] . '.');
 
-        unset($params['password']);
+        //unset($params['password']);
         Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
-            'username' => '',
-            'password' => '',
+            'username' => $params['username'],
+            'password' => encrypt($params['password'])
         ]);
     } catch(Exception $err) {
         return $err->getMessage();
