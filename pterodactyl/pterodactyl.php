@@ -594,7 +594,9 @@ function pterodactyl_ClientArea(array $params) {
         return [
             'templatefile' => 'clientarea',
             'vars' => [
-                'serviceurl' => $hostname . '/server/' . $serverData['attributes']['identifier'],
+		'username' => $params['username'],
+                'password' => $params['password'],
+                'serviceurl' => $hostname . '/server/' . $serverData['attributes']['identifier']
             ],
         ];
     } catch (Exception $err) {
