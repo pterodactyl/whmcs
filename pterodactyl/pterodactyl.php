@@ -2,19 +2,15 @@
 
 /**
 MIT License
-
 Copyright (c) 2018-2019 Stepan Fedotov <stepan@crident.com>
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -78,8 +74,10 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     $response = curl_exec($curl);
     $responseData = json_decode($response, true);
     $responseData['status_code'] = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    
-    if($responseData['status_code'] === 0 && !$dontLog) logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
+
+    if($responseData['status_code'] === 0 && !$dontLog) {
+      logModuleCall("Pterodactyl-WHMCS", "CURL ERROR", curl_error($curl), "");
+    }
 
     curl_close($curl);
 
@@ -236,17 +234,6 @@ function pterodactyl_TestConnection(array $params) {
     ];
 }
 
-function pterodactyl_GenerateUsername($length = 8) {
-    $returnable = false;
-    while (!$returnable) {
-        $generated = str_random($length);
-        if (preg_match('/[A-Z]+[a-z]+[0-9]+/', $generated)) {
-            $returnable = true;
-        }
-    }
-    return $generated;
-}
-
 function pterodactyl_GetOption(array $params, $id, $default = NULL) {
     $options = pterodactyl_ConfigOptions();
 
@@ -284,11 +271,13 @@ function pterodactyl_CreateAccount(array $params) {
         if(isset($serverId)) throw new Exception('Failed to create server because it is already created.');
 
         $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
+        $ptero_username = str_replace(["@", ".", "-", "_"], "", $params['clientsdetails']['email']);
         if($userResult['status_code'] === 404) {
             $userResult = pterodactyl_API($params, 'users?search=' . urlencode($params['clientsdetails']['email']));
             if($userResult['meta']['pagination']['total'] === 0) {
                 $userResult = pterodactyl_API($params, 'users', [
-                    'username' => pterodactyl_GetOption($params, 'username', pterodactyl_GenerateUsername()),
+                    'username' => $ptero_username,
+                    'password' => $params['password'],
                     'email' => $params['clientsdetails']['email'],
                     'first_name' => $params['clientsdetails']['firstname'],
                     'last_name' => $params['clientsdetails']['lastname'],
@@ -330,7 +319,7 @@ function pterodactyl_CreateAccount(array $params) {
             else $environment[$var] = $default;
         }
 
-        $name = pterodactyl_GetOption($params, 'server_name', pterodactyl_GenerateUsername() . '_' . $params['serviceid']);
+        $name = pterodactyl_GetOption($params, 'server_name', 'ChangeMe_' . $params['serviceid']);
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
         $io = pterodactyl_GetOption($params, 'io');
@@ -381,11 +370,18 @@ function pterodactyl_CreateAccount(array $params) {
         if($server['status_code'] === 400) throw new Exception('Couldn\'t find any nodes satisfying the request.');
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
 
-        unset($params['password']);
         Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
-            'username' => '',
-            'password' => '',
+            'username' => $ptero_username
         ]);
+
+        // Update with current password case if user exist
+        $selectDB = Capsule::table('tblhosting')->select('*')->where('username', ''.$ptero_username.'')->orderBy('id', 'ASC')->get();
+        if(count($selectDB)>0) {
+          Capsule::table('tblhosting')->where('username', ''.$ptero_username.'')->update([
+              'password' => $selectDB[0]->password
+          ]);
+        }
+
     } catch(Exception $err) {
         return $err->getMessage();
     }
@@ -465,7 +461,8 @@ function pterodactyl_TerminateAccount(array $params) {
 
 function pterodactyl_ChangePassword(array $params) {
     try {
-        if($params['password'] === '') throw new Exception('The password cannot be empty.');
+
+        if($params['password'] === '') throw new Exception('The password cannot be empty. (type password/username and then hit "Save Changes", now you can hit "Change Password")');
 
         $serverData = pterodactyl_GetServerID($params, true);
         if(!isset($serverData)) throw new Exception('Failed to change password because linked server doesn\'t exist.');
@@ -475,20 +472,19 @@ function pterodactyl_ChangePassword(array $params) {
         if($userResult['status_code'] !== 200) throw new Exception('Failed to retrieve user, received error code: ' . $userResult['status_code'] . '.');
 
         $updateResult = pterodactyl_API($params, 'users/' . $serverData['attributes']['user'], [
-            'username' => $userResult['attributes']['username'],
+            'username' => $params['username'],
+            'password' => $params['password'],
             'email' => $userResult['attributes']['email'],
             'first_name' => $userResult['attributes']['first_name'],
             'last_name' => $userResult['attributes']['last_name'],
-
-            'password' => $params['password'],
         ], 'PATCH');
         if($updateResult['status_code'] !== 200) throw new Exception('Failed to change password, received error code: ' . $updateResult['status_code'] . '.');
 
-        unset($params['password']);
-        Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
-            'username' => '',
-            'password' => '',
+        Capsule::table('tblhosting')->where('username', $userResult['attributes']['username'])->update([
+            'username' => $params['username'],
+            'password' => encrypt($params['password'])
         ]);
+
     } catch(Exception $err) {
         return $err->getMessage();
     }
@@ -593,6 +589,8 @@ function pterodactyl_ClientArea(array $params) {
         return [
             'templatefile' => 'clientarea',
             'vars' => [
+                'username' => $params['username'],
+                'password' => $params['password'],
                 'serviceurl' => $hostname . '/server/' . $serverData['attributes']['identifier'],
             ],
         ];
