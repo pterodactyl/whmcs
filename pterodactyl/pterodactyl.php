@@ -285,7 +285,7 @@ function pterodactyl_CreateAccount(array $params) {
 
         $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
         if($userResult['status_code'] === 404) {
-            $userResult = pterodactyl_API($params, 'users?search=' . urlencode($params['clientsdetails']['email']));
+            $userResult = pterodactyl_API($params, 'users?filter[email]=' . urlencode($params['clientsdetails']['email']));
             if($userResult['meta']['pagination']['total'] === 0) {
                 $userResult = pterodactyl_API($params, 'users', [
                     'username' => pterodactyl_GetOption($params, 'username', pterodactyl_GenerateUsername()),
