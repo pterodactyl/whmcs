@@ -62,6 +62,12 @@ Double check that you've configured the panel's mail settings correctly, the Tes
 ## My game requires multiple ports allocated.
 Currently, this isn't possible with this module but is planned.
 
+## The server gets assigned to the first/admin user of the panel instead of the user who ordered the service.
+Please update your module (by redownloading it).
+
+## The feature_limits.backups field must be present.
+Please update your module (by redownloading it).
+
 ## How to enable module debug log
 1. In WHMCS navigate to Utilities > Logs > Module Log
 2. Click the Enable Debug Logging button.

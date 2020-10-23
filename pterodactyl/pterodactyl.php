@@ -160,7 +160,7 @@ function pterodactyl_ConfigOptions() {
         ],
         "pack_id" => [
             "FriendlyName" => "Pack ID",
-            "Description" => "ID of the Pack to install the server with (optional)",
+            "Description" => "ID of the Pack to install the server with (optional) [UNUSED, LEFT FOR COMPATIBILITY REASONS]",
             "Type" => "text",
             "Size" => 10,
         ],
@@ -198,6 +198,12 @@ function pterodactyl_ConfigOptions() {
             "FriendlyName" => "Disable OOM Killer",
             "Description" => "Should the Out Of Memory Killer be disabled (optional)",
             "Type" => "yesno",
+        ],
+        "backups" => [
+            "FriendlyName" => "Backups",
+            "Description" => "Client will be able to create this amount of backups for their server (optional)",
+            "Type" => "text",
+            "Size" => 10,
         ],
     ];
 }
@@ -346,7 +352,6 @@ function pterodactyl_CreateAccount(array $params) {
         $io = pterodactyl_GetOption($params, 'io');
         $cpu = pterodactyl_GetOption($params, 'cpu');
         $disk = pterodactyl_GetOption($params, 'disk');
-        $pack_id = pterodactyl_GetOption($params, 'pack_id');
         $location_id = pterodactyl_GetOption($params, 'location_id');
         $dedicated_ip = pterodactyl_GetOption($params, 'dedicated_ip') ? true : false;
         $port_range = pterodactyl_GetOption($params, 'port_range');
@@ -355,6 +360,7 @@ function pterodactyl_CreateAccount(array $params) {
         $startup = pterodactyl_GetOption($params, 'startup', $eggData['attributes']['startup']);
         $databases = pterodactyl_GetOption($params, 'databases');
         $allocations = pterodactyl_GetOption($params, 'allocations');
+        $backups = pterodactyl_GetOption($params, 'backups');
         $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
         $serverData = [
             'name' => $name,
@@ -374,6 +380,7 @@ function pterodactyl_CreateAccount(array $params) {
             'feature_limits' => [
                 'databases' => $databases ? (int) $databases : null,
                 'allocations' => (int) $allocations,
+                'backups' => (int) $backups,
             ],
             'deploy' => [
                 'locations' => [(int) $location_id],
@@ -384,7 +391,6 @@ function pterodactyl_CreateAccount(array $params) {
             'start_on_completion' => true,
             'external_id' => (string) $params['serviceid'],
         ];
-        if(isset($pack_id)) $serverData['pack'] = (int) $pack_id;
 
         $server = pterodactyl_API($params, 'servers', $serverData, 'POST');
 
@@ -519,6 +525,7 @@ function pterodactyl_ChangePackage(array $params) {
         $disk = pterodactyl_GetOption($params, 'disk');
         $databases = pterodactyl_GetOption($params, 'databases');
         $allocations = pterodactyl_GetOption($params, 'allocations');
+        $backups = pterodactyl_GetOption($params, 'backups');
         $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
         $updateData = [
             'allocation' => $serverData['attributes']['allocation'],
@@ -531,6 +538,7 @@ function pterodactyl_ChangePackage(array $params) {
             'feature_limits' => [
                 'databases' => (int) $databases,
                 'allocations' => (int) $allocations,
+                'backups' => (int) $backups,
             ],
         ];
 
@@ -539,7 +547,6 @@ function pterodactyl_ChangePackage(array $params) {
 
         $nestId = pterodactyl_GetOption($params, 'nest_id');
         $eggId = pterodactyl_GetOption($params, 'egg_id');
-        $pack_id = pterodactyl_GetOption($params, 'pack_id');
         $eggData = pterodactyl_API($params, 'nests/' . $nestId . '/eggs/' . $eggId . '?include=variables');
         if($eggData['status_code'] !== 200) throw new Exception('Failed to get egg data, received error code: ' . $eggData['status_code'] . '. Enable module debug log for more info.');
 
@@ -562,7 +569,6 @@ function pterodactyl_ChangePackage(array $params) {
             'environment' => $environment,
             'startup' => $startup,
             'egg' => (int) $eggId,
-            'pack' => (int) $pack_id,
             'image' => $image,
             'skip_scripts' => false,
         ];
@@ -585,7 +591,7 @@ function pterodactyl_LoginLink(array $params) {
 
         $hostname = pterodactyl_GetHostname($params);
         echo '[<a href="'.$hostname.'/admin/servers/view/' . $serverId . '" target="_blank">Go to Service</a>]';
-        echo '<p style="float: right">[<a href="https://github.com/TrixterTheTux/Pterodactyl-WHMCS/issues" target="_blank">Report A Bug</a>]</p>';
+        echo '<p style="float: right">[<a href="https://github.com/pterodactyl/whmcs/issues" target="_blank">Report A Bug</a>]</p>';
     } catch(Exception $err) {
         // Ignore
     }
@@ -595,10 +601,14 @@ function pterodactyl_ClientArea(array $params) {
     if($params['moduletype'] !== 'pterodactyl') return;
 
     try {
-        $serverData = pterodactyl_GetServerID($params, true);
-        if($serverData['status_code'] === 404 || !isset($serverData['attributes']['id'])) return;
-
         $hostname = pterodactyl_GetHostname($params);
+        $serverData = pterodactyl_GetServerID($params, true);
+        if($serverData['status_code'] === 404 || !isset($serverData['attributes']['id'])) return [
+            'templatefile' => 'clientarea',
+            'vars' => [
+                'serviceurl' => $hostname,
+            ],
+        ];
 
         return [
             'templatefile' => 'clientarea',
