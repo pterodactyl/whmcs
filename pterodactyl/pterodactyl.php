@@ -188,7 +188,7 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 10,
         ],
-	    "server_name" => [
+    	"server_name" => [
             "FriendlyName" => "Server Name",
             "Description" => "The name of the server as shown on the panel (optional)",
             "Type" => "text",
@@ -202,6 +202,12 @@ function pterodactyl_ConfigOptions() {
         "backups" => [
             "FriendlyName" => "Backups",
             "Description" => "Client will be able to create this amount of backups for their server (optional)",
+            "Type" => "text",
+            "Size" => 10,
+        ],
+	"allocations" => [
+            "FriendlyName" => "Allocations",
+            "Description" => "Client will be able to create this amount of allocations for their server (optional)",
             "Type" => "text",
             "Size" => 10,
         ],
