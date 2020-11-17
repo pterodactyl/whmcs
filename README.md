@@ -5,7 +5,7 @@ WHMCS Module for the [Pterodactyl Panel](https://github.com/pterodactyl/panel/).
 Please use the [Pterodactyl Discord](https://discord.gg/pterodactyl) for configuration related support instead of GitHub issues.
 
 ## NOTE!
-This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.7.x versions, checkout the 0.7 branch. 
+This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.7.x versions, check the [0.7 branch.](https://github.com/pterodactyl/whmcs/tree/0.7) 
 
 ## Installation
 [Video Tutorial](https://www.youtube.com/watch?v=wURpRD9vfj4) (uses 0.7 version of the panel but nothing changed functionality wise)
@@ -69,7 +69,7 @@ Please update your module (by redownloading it).
 Please update your module (by redownloading it).
 
 ## How to enable module debug log
-1. In WHMCS navigate to Utilities > Logs > Module Log
+1. In WHMCS 7 or below navigate to Utilities > Logs > Module Log. For WHMCS 8.x navigate to System Logs > Module Log in the left sidebar.
 2. Click the Enable Debug Logging button.
 3. Do the action that failed again and you will have required logs to debug the issue. All 404 errors can be ignored.
 4. Remember to Disable Debug Logging if you are using this in production, as it's not recommended to have it enabled.
