@@ -5,7 +5,7 @@ WHMCS Module for the [Pterodactyl Panel](https://github.com/pterodactyl/panel/).
 Please use the [Pterodactyl Discord](https://discord.gg/pterodactyl) for configuration related support instead of GitHub issues.
 
 ## NOTE!
-This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.7.x versions, checkout the 0.7 branch. 
+This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.7.x versions, check the [0.7 branch.](https://github.com/pterodactyl/whmcs/tree/0.7) 
 
 ## Installation
 [Video Tutorial](https://www.youtube.com/watch?v=wURpRD9vfj4) (uses 0.7 version of the panel but nothing changed functionality wise)
