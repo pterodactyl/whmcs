@@ -205,7 +205,7 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 10,
         ],
-	    "allocations" => [
+        "allocations" => [
             "FriendlyName" => "Allocations",
             "Description" => "Client will be able to create this amount of allocations for their server (optional)",
             "Type" => "text",
