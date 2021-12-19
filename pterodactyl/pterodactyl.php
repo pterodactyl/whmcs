@@ -404,6 +404,46 @@ function pterodactyl_CreateAccount(array $params) {
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
 
         unset($params['password']);
+
+        // Get IP & Port and set on WHMCS "Dedicated IP" field
+        $_nodeID = $server["attributes"]["node"];
+		$_allocationID = $server["attributes"]["allocation"];
+		
+		$_allocations = pterodactyl_API($params, 'nodes/' . $_nodeID . '/allocations');
+
+		$_pages = $_allocations['meta']['pagination']['total_pages'];
+		$_currentPage = $_allocations['meta']['pagination']['current_page'];
+		
+		$_IP = "";
+		$_Port = "";
+		
+			if ($_pages == 1){
+				foreach($_allocations['data'] as $alloc){
+					if ($alloc['attributes']['id'] == $_allocationID){
+							
+							$_IP = $alloc['attributes']['ip'];
+							$_Port = $alloc['attributes']['port'];
+						}
+				}
+			} else {
+				for($_currentPage =1; $_currentPage <= $_pages; $_currentPage++){
+					$_allocations_Temp = pterodactyl_API($params, 'nodes/' . $_nodeID . '/allocations?page=' . $_currentPage);
+					foreach($_allocations_Temp['data'] as $alloc2){
+						if ($alloc2['attributes']['id'] == $_allocationID){
+							
+							$_IP = $alloc2['attributes']['ip'];
+							$_Port = $alloc2['attributes']['port'];
+						}
+					}
+				}
+				
+			}
+
+        try {
+			$query = Capsule::table('tblhosting')->where('id', $params['serviceid'])->where('userid', $params['userid'])->update(array('dedicatedip' => $_IP . ":" . $_Port));
+		} catch (Exception $e) { return $e->getMessage() . "<br />" . $e->getTraceAsString(); }
+		
+
         Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
             'username' => '',
             'password' => '',
@@ -481,6 +521,11 @@ function pterodactyl_TerminateAccount(array $params) {
     } catch(Exception $err) {
         return $err->getMessage();
     }
+
+    // Remove the "Dedicated IP" Field on Termination
+    try {
+        $query = Capsule::table('tblhosting')->where('id', $params['serviceid'])->where('userid', $params['userid'])->update(array('dedicatedip' => ""));
+    } catch (Exception $e) { return $e->getMessage() . "<br />" . $e->getTraceAsString(); }
 
     return 'success';
 }
