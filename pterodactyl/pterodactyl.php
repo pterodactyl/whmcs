@@ -414,8 +414,6 @@ function pterodactyl_CreateAccount(array $params) {
 		$_pages = $_allocations['meta']['pagination']['total_pages'];
 		$_currentPage = $_allocations['meta']['pagination']['current_page'];
 		
-		$_IP = "";
-		$_Port = "";
 		
 			if ($_pages == 1){
 				foreach($_allocations['data'] as $alloc){
@@ -439,10 +437,12 @@ function pterodactyl_CreateAccount(array $params) {
 				
 			}
 
+        // Check if IP & Port field have value. Prevents ":" being added if API error
+        if (isset($_IP) && isset($_Port)) {
         try {
 			$query = Capsule::table('tblhosting')->where('id', $params['serviceid'])->where('userid', $params['userid'])->update(array('dedicatedip' => $_IP . ":" . $_Port));
 		} catch (Exception $e) { return $e->getMessage() . "<br />" . $e->getTraceAsString(); }
-		
+    }
 
         Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
             'username' => '',
