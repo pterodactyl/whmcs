@@ -398,12 +398,24 @@ function pterodactyl_CreateAccount(array $params) {
             'external_id' => (string) $params['serviceid'],
         ];
 
-        $server = pterodactyl_API($params, 'servers', $serverData, 'POST');
+        $server = pterodactyl_API($params, 'servers?include=allocations', $serverData, 'POST');
 
         if($server['status_code'] === 400) throw new Exception('Couldn\'t find any nodes satisfying the request.');
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
 
         unset($params['password']);
+
+        // Get IP & Port and set on WHMCS "Dedicated IP" field
+        $_IP = $server['attributes']['relationships']['allocations']['data'][0]['attributes']['ip'];
+        $_Port = $server['attributes']['relationships']['allocations']['data'][0]['attributes']['port'];
+        
+        // Check if IP & Port field have value. Prevents ":" being added if API error
+        if (isset($_IP) && isset($_Port)) {
+        try {
+			$query = Capsule::table('tblhosting')->where('id', $params['serviceid'])->where('userid', $params['userid'])->update(array('dedicatedip' => $_IP . ":" . $_Port));
+		} catch (Exception $e) { return $e->getMessage() . "<br />" . $e->getTraceAsString(); }
+    }
+
         Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
             'username' => '',
             'password' => '',
@@ -481,6 +493,11 @@ function pterodactyl_TerminateAccount(array $params) {
     } catch(Exception $err) {
         return $err->getMessage();
     }
+
+    // Remove the "Dedicated IP" Field on Termination
+    try {
+        $query = Capsule::table('tblhosting')->where('id', $params['serviceid'])->where('userid', $params['userid'])->update(array('dedicatedip' => ""));
+    } catch (Exception $e) { return $e->getMessage() . "<br />" . $e->getTraceAsString(); }
 
     return 'success';
 }
