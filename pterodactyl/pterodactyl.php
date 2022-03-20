@@ -211,6 +211,13 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 10,
         ],
+	"additional_allocations" => [
+            "FriendlyName" => "Additional Allocations",
+            "Description" => "Number of additional allocations to create on the server. Uses the port range (if set). 0 = None (optional)",
+            "Type" => "text",
+            "Size" => 10,
+            "Default" => "0",
+        ],
     ];
 }
 
@@ -300,6 +307,82 @@ function pterodactyl_GetOption(array $params, $id, $default = NULL) {
     return $default;
 }
 
+function pterodactyL_create_extra_allocations(array $params, $server, $port_range, $additional_allocations) {
+    $allocation_ids = array();
+    $serverId = pterodactyl_GetServerID($params);
+    // Get allocations from node
+    $_allocations = pterodactyl_API($params, 'nodes/' . $server['attributes']['node'] . '/allocations');
+    // we can not filter by assigned status, so this will have to do
+    $_pages = $_allocations['meta']['pagination']['total_pages'];
+    $_currentPage = $_allocations['meta']['pagination']['current_page'];
+    $found = false;
+        if ($_pages == 1) {
+            foreach($_allocations['data'] as $alloc) {
+                if ($alloc['attributes']['assigned'] == false){
+                        array_push($allocation_ids, $alloc['attributes']['id']);
+                    }
+                if (count($allocation_ids) == $additional_allocations) {
+                    $found = true;
+                    continue;
+                }
+            }
+        } elseif ($found == false && $_pages > 1) {
+            for($_currentPage =1; $_currentPage <= $_pages; $_currentPage++){
+                if ($found != true) {
+                    $_allocations_Temp = pterodactyl_API($params, 'nodes/' . $server['attributes']['node'] . '/allocations?page=' . $_currentPage);
+                    foreach($_allocations_Temp['data'] as $alloc2){
+                        if ($alloc2['attributes']['assigned'] == false){
+                            array_push($allocation_ids, $alloc2['attributes']['id']);
+                        }
+                        if (count($allocation_ids) == $additional_allocations) {
+                            $found = true;
+                            continue;
+                        }
+                    }
+                }
+            }
+        } else {
+            throw new Exception('There was an error while creating additional allocations for the server.');
+        }
+
+        if ($found == false) {
+            throw new Exception('Could not locate any free additional IPs for this deployment.');
+        } elseif ($found == true) {
+            // update allocations on server build
+            // get first x allocation ids from array
+            $allocation_ids = array_slice($allocation_ids, 0, $additional_allocations);
+            $allocation_id = $server['attributes']['allocation'];
+            $memory = pterodactyl_GetOption($params, 'memory');
+            $swap = pterodactyl_GetOption($params, 'swap');
+            $io = pterodactyl_GetOption($params, 'io');
+            $cpu = pterodactyl_GetOption($params, 'cpu');
+            $disk = pterodactyl_GetOption($params, 'disk');
+            $databases = pterodactyl_GetOption($params, 'databases');
+            $allocations = pterodactyl_GetOption($params, 'allocations');
+            $backups = pterodactyl_GetOption($params, 'backups');
+            $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;    
+            // update build configuration
+            $updateData = [
+                'allocation' => (int) $allocation_id,
+                'memory' => (int) $memory,
+                'swap' => (int) $swap,
+                'io' => (int) $io,
+                'cpu' => (int) $cpu,
+                'disk' => (int) $disk,
+                'oom_disabled' => $oom_disabled,
+                'feature_limits' => [
+                    'databases' => (int) $databases,
+                    'allocations' => (int) $allocations,
+                    'backups' => (int) $backups,
+                ],    
+                'add_allocations' => $allocation_ids,
+            ];
+
+            $updateResult = pterodactyl_API($params, 'servers/' . $serverId . '/build', $updateData, 'PATCH');
+            if($updateResult['status_code'] !== 200) throw new Exception('Failed to update build of the server, received error code: ' . $updateResult['status_code'] . '. Enable module debug log for more info.');    
+        }
+}
+
 function pterodactyl_CreateAccount(array $params) {
     try {
         $serverId = pterodactyl_GetServerID($params);
@@ -368,6 +451,7 @@ function pterodactyl_CreateAccount(array $params) {
         $allocations = pterodactyl_GetOption($params, 'allocations');
         $backups = pterodactyl_GetOption($params, 'backups');
         $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
+	$additional_allocations = pterodactyl_GetOption($params, 'additional_allocations');
         $serverData = [
             'name' => $name,
             'user' => (int) $userId,
@@ -423,6 +507,11 @@ function pterodactyl_CreateAccount(array $params) {
     } catch(Exception $err) {
         return $err->getMessage();
     }
+	
+	// Call function to create extra allocations on server if creation is > 0
+        if ($additional_allocations > 0) {
+            pterodactyL_create_extra_allocations($params, $server, $port_range, $additional_allocations);
+        }
 
     return 'success';
 }
