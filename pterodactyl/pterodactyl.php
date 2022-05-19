@@ -194,6 +194,12 @@ function pterodactyl_ConfigOptions() {
             "Type" => "text",
             "Size" => 25,
         ],
+    	"server_description" => [
+            "FriendlyName" => "Server Description",
+            "Description" => "The description of the server as shown on the panel (optional)",
+            "Type" => "text",
+            "Size" => 250,
+        ],        
         "oom_disabled" => [
             "FriendlyName" => "Disable OOM Killer",
             "Description" => "Should the Out Of Memory Killer be disabled (optional)",
@@ -353,6 +359,7 @@ function pterodactyl_CreateAccount(array $params) {
         }
 
         $name = pterodactyl_GetOption($params, 'server_name', pterodactyl_GenerateUsername() . '_' . $params['serviceid']);
+        $description = pterodactyl_GetOption($params, 'server_description');
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
         $io = pterodactyl_GetOption($params, 'io');
@@ -370,6 +377,7 @@ function pterodactyl_CreateAccount(array $params) {
         $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
         $serverData = [
             'name' => $name,
+            'description' => $description ? $description : null,
             'user' => (int) $userId,
             'nest' => (int) $nestId,
             'egg' => (int) $eggId,
