@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2023 Evann Pesnaux <pro.evann.s.p@gmail.com>
+Copyright (c) 2018-2019 Stepan Fedotov <stepan@crident.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
