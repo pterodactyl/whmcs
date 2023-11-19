@@ -4,15 +4,15 @@ WHMCS Module for the [Pterodactyl Panel](https://github.com/pterodactyl/panel/).
 
 ## Configuration support
 
-Please use the [Pterodactyl Discord](https://discord.gg/pterodactyl) for configuration related support instead of GitHub issues.
+Please use the [Pterodactyl Discord](https://discord.com/invite/AKpz7Zg5Qr) for configuration related support instead of GitHub issues.
 
 ## NOTE
 
-This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.7.x versions, check the [0.7 branch.](https://github.com/pterodactyl/whmcs/tree/0.7)
+This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.8.x versions, check the [0.8 branch.](https://github.com/DiumStream-tech/Whmcs-Dium-Ptero/releases/tag/0.8)
 
 ## Installation
 
-[Video Tutorial](https://www.youtube.com/watch?v=wURpRD9vfj4) (uses 0.7 version of the panel but nothing changed functionality wise)
+[Video Tutorial](https://www.youtube.com/watch?v=wURpRD9vfj4) (uses 0.8 version of the panel but nothing changed functionality wise)
 
 1. Download/Git clone this repository.
 2. Move the ``pterodactyl/`` folder into ``<path to whmcs>/modules/servers/``.
