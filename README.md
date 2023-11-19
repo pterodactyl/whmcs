@@ -8,7 +8,7 @@ Please use the [Pterodactyl Discord](https://discord.com/invite/AKpz7Zg5Qr) for 
 
 ## NOTE
 
-This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.8.x versions, check the [0.8 branch.](https://github.com/DiumStream-tech/Whmcs-Dium-Ptero/releases/tag/0.8)
+This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.8.x versions, check the [0.8 branch.](https://github.com/DiumStream-tech/Whmcs-Dium-Ptero/releases/tag/0.7.4)
 
 ## Installation
 
@@ -83,7 +83,7 @@ Please update your module (by redownloading it).
 
 ## How to enable module debug log
 
-1. In WHMCS 8.1 or below navigate to Utilities > Logs > Module Log. For WHMCS 8.x navigate to System Logs > Module Log in the left sidebar.
+1. In WHMCS 7 or below navigate to Utilities > Logs > Module Log. For WHMCS 8.x navigate to System Logs > Module Log in the left sidebar.
 2. Click the Enable Debug Logging button.
 3. Do the action that failed again and you will have required logs to debug the issue. All 404 errors can be ignored.
 4. Remember to Disable Debug Logging if you are using this in production, as it's not recommended to have it enabled.
