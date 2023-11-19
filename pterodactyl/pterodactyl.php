@@ -3,7 +3,7 @@
 /**
 MIT License
 
-Copyright (c) 2018-2019 Stepan Fedotov <stepan@crident.com>
+Copyright (c) 2023 Evann Pesnaux <pro.evann.s.p@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -634,10 +634,14 @@ function pterodactyl_ClientArea(array $params) {
             ],
         ];
 
+        // Ajoutez l'UUID du serveur aux variables retournées
         return [
             'templatefile' => 'clientarea',
             'vars' => [
                 'serviceurl' => $hostname . '/server/' . $serverData['attributes']['identifier'],
+                'uuid' => $serverData['attributes']['identifier'], // suppose que l'UUID est stocké dans 'identifier'
+		'adduserurl' => $hostname . '/server/' . $serverData['attributes']['identifier'] . '/users',
+		'backupurl' => $hostname . '/server/' . $serverData['attributes']['identifier'] . '/backup',
             ],
         ];
     } catch (Exception $err) {
