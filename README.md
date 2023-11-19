@@ -8,7 +8,7 @@ Please use the [Pterodactyl Discord](https://discord.com/invite/AKpz7Zg5Qr) for 
 
 ## NOTE
 
-This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.8.x versions, check the [0.8 branch.](https://github.com/DiumStream-tech/Whmcs-Dium-Ptero/releases/tag/0.7.4)
+This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.7.4 versions, check the [0.7.4 branch.](https://github.com/DiumStream-tech/Whmcs-Dium-Ptero/releases/tag/0.7.4)
 
 ## Installation
 
