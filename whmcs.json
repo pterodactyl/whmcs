@@ -1,0 +1,33 @@
+{
+  "schema": "1.0",
+  "type": "whmcs-servers",
+  "name": "pterodactyl",
+  "license": "open-source",
+  "category": "gamehosting",
+  "description": {
+    "name": "Pterodactyl",
+    "tagline": "Open-source game server management panel",
+    "long": "Pterodactyl is an open-source game server management panel designed to provide the ultimate user experience for both admins and end-users. It allows easy management of game servers with features like automatic deployment, resource usage tracking, and more.",
+    "features": [
+      "Automatic game server deployment and management",
+      "Resource usage tracking and monitoring",
+      "User-friendly web interface",
+      "Support for multiple game types",
+      "Customizable server configurations"
+    ]
+  },
+  "logo": {
+    "filename": "pterodactyl.png"
+  },
+  "support": {
+    "homepage": "https:\/\/pterodactyl.io\/",
+    "support_url": "https:\/\/github.com\/pterodactyl\/whmcs-plugin\/issues",
+    "docs_url": "https:\/\/docs.pterodactyl.io\/"
+  },
+  "authors": [
+    {
+      "name": "Pterodactyl",
+      "homepage": "https:\/\/pterodactyl.io\/"
+    }
+  ]
+}
