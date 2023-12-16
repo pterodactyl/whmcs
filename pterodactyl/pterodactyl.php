@@ -535,6 +535,47 @@ function pterodactyl_ChangePassword(array $params) {
     return 'success';
 }
 
+function pterodactyl_ClientAreaCustomButtonArray()
+{
+    return array(
+        "Go to panel" => "ActionGoToPanel",
+    );
+}
+
+function pterodactyl_ActionGoToPanel(array $params)
+{
+    if ($params['moduletype'] !== 'pterodactyl') return;
+
+    try {
+        $serverId = pterodactyl_GetServerID($params);
+        if (!isset($serverId)) return;
+
+        $hostname = pterodactyl_GetHostname($params);
+        $serverData = pterodactyl_GetServerID($params, true);
+
+        $url = $hostname . '/server/' . $serverData['attributes']['identifier'];
+        
+        // FUTURE UPDATE _blank
+        echo '<form id="redirectForm" action="' . $url . '" method="get" target="_self"></form>';
+        
+        echo '<script>document.getElementById("redirectForm").submit();</script>';      
+
+        exit;
+    } catch (Exception $e) {
+        logModuleCall(
+            'provisioningmodule',
+            __FUNCTION__,
+            $params,
+            $e->getMessage(),
+            $e->getTraceAsString()
+        );
+
+        return $e->getMessage();
+    }
+
+    return 'success';
+}
+
 function pterodactyl_ChangePackage(array $params) {
     try {
         $serverData = pterodactyl_GetServerID($params, true);
