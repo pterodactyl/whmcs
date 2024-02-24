@@ -644,3 +644,23 @@ function pterodactyl_ClientArea(array $params) {
         // Ignore
     }
 }
+
+function pterodactyl_ServiceSingleSignOn(array $params) {
+    if($params['moduletype'] !== 'pterodactyl') return;
+
+    try {
+        $hostname = pterodactyl_GetHostname($params);
+        $serverData = pterodactyl_GetServerID($params, true);
+        $response =  $formattedResponse = array('redirectUrl' => $hostname . '/server/' . $serverData['attributes']['identifier']);
+
+        $return = [
+            'success' => true,
+            'redirectTo' => $response['redirectUrl'],
+        ];
+    } catch (Exception $e) {
+        return [
+            'success' => false,
+            'errorMsg' => $e->getMessage(),
+        ];
+    }
+}
