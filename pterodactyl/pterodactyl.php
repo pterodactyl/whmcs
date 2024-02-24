@@ -651,10 +651,13 @@ function pterodactyl_ServiceSingleSignOn(array $params) {
     try {
         $hostname = pterodactyl_GetHostname($params);
         $serverData = pterodactyl_GetServerID($params, true);
+        $response = ['redirectUrl' => $hostname];
+        if($serverData['status_code'] !== 404 && isset($serverData['attributes']['id']))
+            $response['redirectUrl'] = $hostname . '/server/' . $serverData['attributes']['identifier'];
 
         $return = [
             'success' => true,
-            'redirectTo' => $hostname . '/server/' . $serverData['attributes']['identifier'],
+            'redirectTo' => $response['redirectUrl'],
         ];
     } catch (Exception $e) {
         return [
