@@ -655,7 +655,7 @@ function pterodactyl_ServiceSingleSignOn(array $params) {
         if($serverData['status_code'] !== 404 && isset($serverData['attributes']['id']))
             $response['redirectUrl'] = $hostname . '/server/' . $serverData['attributes']['identifier'];
 
-        return = [
+        return [
             'success' => true,
             'redirectTo' => $response['redirectUrl'],
         ];
