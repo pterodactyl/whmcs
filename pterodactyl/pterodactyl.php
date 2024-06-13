@@ -45,7 +45,8 @@ function pterodactyl_GetHostname(array $params) {
     if(ip2long($hostname) !== false) $hostname = 'http://' . $hostname;
     else $hostname = ($params['serversecure'] ? 'https://' : 'http://') . $hostname;
 
-    return rtrim($hostname, '/');
+    // Append port and return
+    return rtrim($hostname, '/') . ':' . $params['serverport'];
 }
 
 function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "GET", $dontLog = false) {
@@ -99,6 +100,8 @@ function pterodactyl_MetaData() {
         "DisplayName" => "Pterodactyl",
         "APIVersion" => "1.1",
         "RequiresServer" => true,
+        'DefaultNonSSLPort' => '80',
+        'DefaultSSLPort' => '443',
     ];
 }
 
