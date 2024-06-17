@@ -300,38 +300,63 @@ function pterodactyl_GetOption(array $params, $id, $default = NULL) {
     return $default;
 }
 
+function pterodactyl_ResolveUser(array $params)
+{
+    // Search for user by external ID
+    $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
+    if ($userResult['status_code'] === 200) {
+        return $userResult['attributes'];
+    } elseif ($userResult['status_code'] !== 404) { // Not found is the only acceptable error code
+        throw new Exception('Failed to get user, received error code: ' . $userResult['status_code'] . '. Enable module debug log for more info.');
+    }
+
+
+    // Search for user by email
+    $page = 1;
+    do {
+        $userResult = pterodactyl_API($params, 'users?page=' . $page . '&filter[email]=' . urlencode($params['clientsdetails']['email']));
+
+        // Api should always return 200, if not, something is wrong
+        if ($userResult['status_code'] !== 200) throw new Exception('Failed to get user, received error code: ' . $userResult['status_code'] . '. Enable module debug log for more info.');
+
+        // Loop though any users found and return the first one that matches the email    
+        foreach($userResult['data'] as $user) {
+            if(strcasecmp($user['attributes']['email'], $params['clientsdetails']['email']) === 0) {
+                return $user['attributes'];
+            }
+        }
+        $page++;
+    } while ($userResult['meta']['pagination']['current_page'] < $userResult['meta']['pagination']['total_pages']);
+    
+
+
+    // A matching user was not found - create a new one
+    $userResult = pterodactyl_API($params, 'users', [
+        'username' => pterodactyl_GetOption($params, 'username', pterodactyl_GenerateUsername()),
+        'email' => $params['clientsdetails']['email'],
+        'first_name' => $params['clientsdetails']['firstname'],
+        'last_name' => $params['clientsdetails']['lastname'],
+        'external_id' => (string) $params['clientsdetails']['id'],
+    ], 'POST');
+
+    if ($userResult['status_code'] === 201) {
+        return $userResult['attributes'];
+    }
+
+    // If we got here, we failed!
+    throw new Exception('Failed to create user, received error code: ' . $userResult['status_code'] . '. Enable module debug log for more info.');
+
+}
+
 function pterodactyl_CreateAccount(array $params) {
     try {
+
+        // Ensure server with this External ID doesn't already exist
         $serverId = pterodactyl_GetServerID($params);
         if(isset($serverId)) throw new Exception('Failed to create server because it is already created.');
 
-        $userResult = pterodactyl_API($params, 'users/external/' . $params['clientsdetails']['id']);
-        if($userResult['status_code'] === 404) {
-            $userResult = pterodactyl_API($params, 'users?filter[email]=' . urlencode($params['clientsdetails']['email']));
-            if($userResult['meta']['pagination']['total'] === 0) {
-                $userResult = pterodactyl_API($params, 'users', [
-                    'username' => pterodactyl_GetOption($params, 'username', pterodactyl_GenerateUsername()),
-                    'email' => $params['clientsdetails']['email'],
-                    'first_name' => $params['clientsdetails']['firstname'],
-                    'last_name' => $params['clientsdetails']['lastname'],
-                    'external_id' => (string) $params['clientsdetails']['id'],
-                ], 'POST');
-            } else {
-                foreach($userResult['data'] as $key => $value) {
-                    if($value['attributes']['email'] === $params['clientsdetails']['email']) {
-                        $userResult = array_merge($userResult, $value);
-                        break;
-                    }
-                }
-                $userResult = array_merge($userResult, $userResult['data'][0]);
-            }
-        }
-
-        if($userResult['status_code'] === 200 || $userResult['status_code'] === 201) {
-            $userId = $userResult['attributes']['id'];
-        } else {
-            throw new Exception('Failed to create user, received error code: ' . $userResult['status_code'] . '. Enable module debug log for more info.');
-        }
+        $userResult = pterodactyl_ResolveUser($params);
+        $userId = $userResult['id'];
 
         $nestId = pterodactyl_GetOption($params, 'nest_id');
         $eggId = pterodactyl_GetOption($params, 'egg_id');
