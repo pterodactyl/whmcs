@@ -10,6 +10,8 @@ Please use the [Pterodactyl Discord](https://discord.gg/pterodactyl) for configu
 
 This module requires the panel to be on version 1.0.0 and above, if you need one for the 0.7.x versions, check the [0.7 branch.](https://github.com/pterodactyl/whmcs/tree/0.7)
 
+The module works with both Panel 1.x and 2.x. Panel 2.x has no nests, so the Nest ID setting is ignored there. Update the module **before** upgrading your Panel to 2.x: earlier versions of this module cannot create servers or change packages on 2.x.
+
 ## Installation
 
 [Video Tutorial](https://www.youtube.com/watch?v=wURpRD9vfj4) (uses 0.7 version of the panel but nothing changed functionality wise)
