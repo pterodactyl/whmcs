@@ -1,0 +1,29 @@
+pterodactyl/pterodactyl.php
+  s_104ad1f87e3acb::t_a390012a5021e6 623-624,626,628-629
+  s_104ad1f87e3acb::t_bea41e238af3a4 94,96-98,101
+  s_488821bd68e9e0::t_084e903114cb36 93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "25714f7ce3c4f5368045daf025a1d98a2353942a",
+  "prompts": {},
+  "sessions": {
+    "s_104ad1f87e3acb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "29b80ace-8956-4496-8428-08229ef8fdd5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "robert dennis <31261583+robertdrakedennis@users.noreply.github.com>"
+    },
+    "s_488821bd68e9e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1291b-0691-7713-b2fe-d62aefcbc650",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "robert dennis <31261583+robertdrakedennis@users.noreply.github.com>"
+    }
+  }
+}
