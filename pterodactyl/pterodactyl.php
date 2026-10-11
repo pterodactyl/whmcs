@@ -90,22 +90,15 @@ function pterodactyl_API(array $params, $endpoint, array $data = [], $method = "
     return $responseData;
 }
 
-function pterodactyl_IsPanel2(array $params) {
-    static $isPanel2 = [];
+function pterodactyl_GetEgg(array $params, $nestId, $eggId) {
+    $eggData = pterodactyl_API($params, 'eggs/' . $eggId . '?include=variables');
 
-    // Panel 2.x serves eggs at the top level; 1.x only serves them under their nest.
-    $hostname = pterodactyl_GetHostname($params);
-    if(!isset($isPanel2[$hostname])) {
-        $isPanel2[$hostname] = pterodactyl_API($params, 'eggs?per_page=1', [], 'GET', true)['status_code'] === 200;
+    // Panel 1.x only serves eggs under their nest.
+    if($eggData['status_code'] === 404) {
+        $eggData = pterodactyl_API($params, 'nests/' . $nestId . '/eggs/' . $eggId . '?include=variables');
     }
 
-    return $isPanel2[$hostname];
-}
-
-function pterodactyl_GetEgg(array $params, $nestId, $eggId) {
-    if(pterodactyl_IsPanel2($params)) return pterodactyl_API($params, 'eggs/' . $eggId . '?include=variables');
-
-    return pterodactyl_API($params, 'nests/' . $nestId . '/eggs/' . $eggId . '?include=variables');
+    return $eggData;
 }
 
 function pterodactyl_Error($func, $params, Exception $err) {
@@ -627,12 +620,13 @@ function pterodactyl_LoginLink(array $params) {
     if($params['moduletype'] !== 'pterodactyl') return;
 
     try {
-        $serverId = pterodactyl_GetServerID($params);
-        if(!isset($serverId)) return;
+        $serverData = pterodactyl_GetServerID($params, true);
+        if(!isset($serverData)) return;
 
+        // Panel 2.x has no nests, so its server payload has no "nest" field.
         $hostname = pterodactyl_GetHostname($params);
-        $serverPath = pterodactyl_IsPanel2($params) ? '/panel/servers/' : '/admin/servers/view/';
-        echo '<a style="padding-right:3px" href="'.$hostname.$serverPath . $serverId . '" target="_blank">[Go to Service]</a>';
+        $serverPath = array_key_exists('nest', $serverData['attributes']) ? '/admin/servers/view/' : '/panel/servers/';
+        echo '<a style="padding-right:3px" href="'.$hostname.$serverPath . $serverData['attributes']['id'] . '" target="_blank">[Go to Service]</a>';
         echo '<p style="float:right; padding-right:1.3%">[<a href="https://github.com/pterodactyl/whmcs/issues" target="_blank">Report A Bug</a>]</p>';
         # echo '<p style="float: right">[<a href="https://github.com/pterodactyl/whmcs/issues" target="_blank">Report A Bug</a>]</p>';
     } catch(Exception $err) {
