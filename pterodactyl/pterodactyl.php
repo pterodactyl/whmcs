@@ -311,6 +311,34 @@ function pterodactyl_GetOption(array $params, $id, $default = NULL) {
     return $default;
 }
 
+
+// parseplaceholdr function
+function pterodactyl_ParsePlaceholders($text, array $params) {
+    $vars = [
+        '{{USERNAME}}' => $params['clientsdetails']['username']
+            ?? explode('@', $params['clientsdetails']['email'])[0],
+
+        '{{FIRSTNAME}}' => $params['clientsdetails']['firstname'] ?? '',
+        '{{LASTNAME}}'  => $params['clientsdetails']['lastname'] ?? '',
+        '{{EMAIL}}'     => $params['clientsdetails']['email'] ?? '',
+        '{{SERVICEID}}' => $params['serviceid'] ?? '',
+        '{{PRODUCT}}'   => $params['productname'] ?? '',
+        '{{DOMAIN}}'    => $params['domain'] ?? '',
+    ];
+
+    $text = str_replace(
+        array_keys($vars),
+        array_values($vars),
+        $text
+    );
+
+    $text = preg_replace('/[^a-zA-Z0-9_\- .]/', '', $text);
+    $text = trim($text);
+
+    return substr($text, 0, 191);
+}
+
+
 function pterodactyl_CreateAccount(array $params) {
     try {
         $serverId = pterodactyl_GetServerID($params);
@@ -363,7 +391,9 @@ function pterodactyl_CreateAccount(array $params) {
             else $environment[$var] = $default;
         }
 
-        $name = pterodactyl_GetOption($params, 'server_name', pterodactyl_GenerateUsername() . '_' . $params['serviceid']);
+        $template = pterodactyl_GetOption($params, 'server_name', pterodactyl_GenerateUsername() . '_' . $params['serviceid']);
+
+        $name = pterodactyl_ParsePlaceholders($template, $params);
         $memory = pterodactyl_GetOption($params, 'memory');
         $swap = pterodactyl_GetOption($params, 'swap');
         $io = pterodactyl_GetOption($params, 'io');
